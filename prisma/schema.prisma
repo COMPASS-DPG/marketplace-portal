@@ -12,9 +12,66 @@ datasource db {
 
 // Here goes models
 
-//dummy user model
-model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+enum CourseProgressStatus {
+  inProgress
+  completed
+}
+
+enum NotificationStatus {
+  viewed
+  notViewed
+}
+
+model ConsumerMetadata {
+  consumerId        String        @id 
+  walletId          Int           @unique
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  coursesPurchased  Int[]         @default([])
+  savedCourses      Int[]         @default([])
+  notifications     Notification[]        
+}
+
+model ConsumerCourseMetadata {
+  id                  Int                   @id @default(autoincrement())
+  consumerId          String    
+  courseId            Int       
+  status              CourseProgressStatus  @default(inProgress)
+  walletTransactionId Int
+  becknTransactionId  Int
+  rating              Int
+  feedback            String
+  course              CourseInfo            @relation(fields: [courseId], references: [courseId])
+
+  @@unique([consumerId, courseId])
+}
+
+model CourseInfo {
+  courseId            Int                     @id
+  bppId               String
+  title               String
+  description         String
+  credits             Int
+  imageLink           String
+  language            String[]
+  courseLink          String
+  providerName        String
+  purchases           ConsumerCourseMetadata[]
+}
+
+model Admin {
+  id        Int     @id @default(autoincrement())
+  name      String  
+  email     String  @unique
+  password  String 
+  walletId  Int     @unique
+}
+
+model Notification {
+  id                  Int                 @id
+  consumerId          String    
+  text                String
+  link                String
+  status              NotificationStatus  @default(notViewed)
+  consumer            ConsumerMetadata    @relation(fields: [consumerId], references: [consumerId])
 }
