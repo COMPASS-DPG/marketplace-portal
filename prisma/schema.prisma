@@ -23,13 +23,14 @@ enum NotificationStatus {
 }
 
 model ConsumerMetadata {
-  consumerId        String        @id 
-  walletId          Int           @unique
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  coursesPurchased  Int[]         @default([])
-  savedCourses      Int[]         @default([])
+  consumerId        String                    @id 
+  walletId          Int                       @unique
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  savedCourses      Int[]                     @default([])
   notifications     Notification[]        
+  wallet            Wallet                    @relation(fields: [walletId], references: [walletId])
+  coursesPurchased  ConsumerCourseMetadata[]         
 }
 
 model ConsumerCourseMetadata {
@@ -39,9 +40,10 @@ model ConsumerCourseMetadata {
   status              CourseProgressStatus  @default(inProgress)
   walletTransactionId Int
   becknTransactionId  Int
-  rating              Int
-  feedback            String
+  rating              Int?
+  feedback            String?
   course              CourseInfo            @relation(fields: [courseId], references: [courseId])
+  consumer            ConsumerMetadata      @relation(fields: [consumerId], references: [consumerId])
 
   @@unique([consumerId, courseId])
 }
@@ -65,6 +67,7 @@ model Admin {
   email     String  @unique
   password  String 
   walletId  Int     @unique
+  wallet    Wallet  @relation(fields: [walletId], references: [walletId])
 }
 
 model Notification {
@@ -74,4 +77,49 @@ model Notification {
   link                String
   status              NotificationStatus  @default(notViewed)
   consumer            ConsumerMetadata    @relation(fields: [consumerId], references: [consumerId])
+}
+
+
+// dummy wallet model
+model Wallet {
+  walletId   Int                  @id @default(autoincrement())
+  type       WalletType
+  status     WalletStatus         @default(active)
+  credits    Int                  @default(0)
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+  consumer   ConsumerMetadata? 
+  admin      Admin? 
+  transactionsFrom Transaction[]  @relation("FromTransaction")
+  transactionsTo   Transaction[]  @relation("ToTransaction")
+}
+
+model Transaction {
+  transactionId   Int               @id @default(autoincrement())
+  fromId          Int  
+  toId            Int
+  credits         Int
+  type            TransactionType
+  description     String?
+  createdAt       DateTime          @default(now())
+  from            Wallet            @relation("FromTransaction", fields:[fromId], references:[walletId])
+  to              Wallet            @relation("ToTransaction", fields:[toId], references:[walletId])
+}
+
+enum WalletType {
+  admin
+  provider
+  consumer
+}
+
+enum WalletStatus {
+  active
+  inactive
+  frozen
+}
+
+enum TransactionType {
+  purchase
+  creditRequest
+  settlement
 }
