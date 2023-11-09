@@ -29,7 +29,6 @@ model ConsumerMetadata {
   updatedAt         DateTime                  @updatedAt
   savedCourses      Int[]                     @default([])
   notifications     Notification[]        
-  // wallet            Wallet                    @relation(fields: [walletId], references: [walletId])
   coursesPurchased  ConsumerCourseMetadata[]         
 }
 
@@ -67,7 +66,6 @@ model Admin {
   email     String  @unique
   password  String 
   walletId  Int     @unique
-  // wallet    Wallet  @relation(fields: [walletId], references: [walletId])
 }
 
 model Notification {
