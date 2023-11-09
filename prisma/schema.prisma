@@ -29,7 +29,7 @@ model ConsumerMetadata {
   updatedAt         DateTime                  @updatedAt
   savedCourses      Int[]                     @default([])
   notifications     Notification[]        
-  wallet            Wallet                    @relation(fields: [walletId], references: [walletId])
+  // wallet            Wallet                    @relation(fields: [walletId], references: [walletId])
   coursesPurchased  ConsumerCourseMetadata[]         
 }
 
@@ -67,59 +67,14 @@ model Admin {
   email     String  @unique
   password  String 
   walletId  Int     @unique
-  wallet    Wallet  @relation(fields: [walletId], references: [walletId])
+  // wallet    Wallet  @relation(fields: [walletId], references: [walletId])
 }
 
 model Notification {
-  id                  Int                 @id
+  id                  Int                 @id @default(autoincrement())
   consumerId          String    
   text                String
   link                String
   status              NotificationStatus  @default(notViewed)
   consumer            ConsumerMetadata    @relation(fields: [consumerId], references: [consumerId])
-}
-
-
-// dummy wallet model
-model Wallet {
-  walletId   Int                  @id @default(autoincrement())
-  type       WalletType
-  status     WalletStatus         @default(active)
-  credits    Int                  @default(0)
-  createdAt  DateTime             @default(now())
-  updatedAt  DateTime             @updatedAt
-  consumer   ConsumerMetadata? 
-  admin      Admin? 
-  transactionsFrom Transaction[]  @relation("FromTransaction")
-  transactionsTo   Transaction[]  @relation("ToTransaction")
-}
-
-model Transaction {
-  transactionId   Int               @id @default(autoincrement())
-  fromId          Int  
-  toId            Int
-  credits         Int
-  type            TransactionType
-  description     String?
-  createdAt       DateTime          @default(now())
-  from            Wallet            @relation("FromTransaction", fields:[fromId], references:[walletId])
-  to              Wallet            @relation("ToTransaction", fields:[toId], references:[walletId])
-}
-
-enum WalletType {
-  admin
-  provider
-  consumer
-}
-
-enum WalletStatus {
-  active
-  inactive
-  frozen
-}
-
-enum TransactionType {
-  purchase
-  creditRequest
-  settlement
 }

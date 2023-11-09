@@ -1,4 +1,3 @@
-import { TransactionType } from "@prisma/client";
 
 export class TransactionResponse {
     
@@ -10,3 +9,5 @@ export class TransactionResponse {
     readonly description: string | null;
     readonly createdAt: Date;
 }
+
+export type TransactionType = "purchase" | "creditRequest" | "settlement";

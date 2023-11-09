@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpStatus, Param, ParseIntPipe, Patch, Post, Res } from "@nestjs/common";
+import { Body, Controller, Get, HttpStatus, Param, ParseIntPipe, Patch, Post, Query, Res } from "@nestjs/common";
 import { ConsumerService } from "./consumer.service";
 import { ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { ConsumerAccountDto, CreditsDto } from "./dto/account.dto";
@@ -7,6 +7,7 @@ import { CourseInfoDto } from "./dto/courseInfo.dto";
 import { TransactionResponse } from "./dto/transaction.dto";
 import { FeedbackDto } from "./dto/feedback.dto";
 import { NotificationDto } from "./dto/notification.dto";
+import { CreateRequestDto } from "./dto/create-request.dto";
 
 
 @Controller('consumer')
@@ -140,9 +141,10 @@ export class ConsumerController {
     @ApiResponse({ status: HttpStatus.OK })
     @Get("/course/search?q=<query/competency>")
     async searchCourses(
+        @Query() competency: string,
         @Res() res
     ) {
-        const course = await this.consumerService.searchCourses();
+        const course = await this.consumerService.searchCourses(competency);
 
         res.status(HttpStatus.OK).json({
             message: "fetch successful"
@@ -214,6 +216,22 @@ export class ConsumerController {
 
         res.status(HttpStatus.OK).json({
             message: "course completion successful",
+        });
+    }
+
+    // Request credits to admin
+    @ApiOperation({ summary: 'Request credits' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @Post("/:consumerId/request")
+    async requestCredits(
+        @Param("consumerId") consumerId: string,
+        @Body() createRequestDto: CreateRequestDto,
+        @Res() res
+    ) {
+        await this.consumerService.requestCredits(consumerId, createRequestDto);
+
+        res.status(HttpStatus.OK).json({
+            message: "credit request successful",
         });
     }
 }
