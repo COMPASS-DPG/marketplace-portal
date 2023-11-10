@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpStatus, Param, ParseIntPipe, Patch, Post, Query, Res } from "@nestjs/common";
+import { Body, Controller, Get, HttpStatus, Logger, Param, ParseIntPipe, Patch, Post, Query, Res } from "@nestjs/common";
 import { ConsumerService } from "./consumer.service";
 import { ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { ConsumerAccountDto, CreditsDto } from "./dto/account.dto";
@@ -7,11 +7,15 @@ import { CourseInfoDto } from "./dto/courseInfo.dto";
 import { TransactionResponse } from "./dto/transaction.dto";
 import { FeedbackDto } from "./dto/feedback.dto";
 import { NotificationDto } from "./dto/notification.dto";
-import { CreateRequestDto } from "./dto/create-request.dto";
+import { CreateRequestDto, RequestDto } from "./dto/create-request.dto";
+import { PurchaseCourseDto } from "./dto/purchase.dto";
+import { getPrismaErrorStatusAndMessage } from "src/utils/utils";
 
 
 @Controller('consumer')
 export class ConsumerController {
+    private readonly logger = new Logger(ConsumerController.name);
+
     constructor(
         private consumerService: ConsumerService,
     ) {}
@@ -24,14 +28,28 @@ export class ConsumerController {
         @Param("consumerId") consumerId: string,
         @Res() res
     ) {
-        const consumer = await this.consumerService.getAccountDetails(consumerId);
+        try {
+            this.logger.log(`Getting consumer profile`);
 
-        res.status(HttpStatus.OK).json({
-            message: "fetch successful",
-            data: {
-                consumer
-            }
-        })
+            const consumer = await this.consumerService.getAccountDetails(consumerId);
+
+            this.logger.log(`Successfully retrieved consumer profile`);
+
+            res.status(HttpStatus.OK).json({
+                message: "fetch successful",
+                data: {
+                    consumer
+                }
+            })
+        } catch (err) {
+            this.logger.error(`Failed to retreive consumer's profile`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to retreive consumer's profile",
+            });
+        }
     }
 
     // View course history
@@ -42,14 +60,28 @@ export class ConsumerController {
         @Param("consumerId") consumerId: string,
         @Res() res
     ) {
-        const consumerCourses = await this.consumerService.viewCoursePurchaseHistory(consumerId);
+        try {
+            this.logger.log(`Getting consumer course history`);
 
-        res.status(HttpStatus.OK).json({
-            message: "fetch successful",
-            data: {
-                consumerCourses
-            }
-        })
+            const consumerCourses = await this.consumerService.viewCoursePurchaseHistory(consumerId);
+
+            this.logger.log(`Successfully fetched consumer course history`);
+
+            res.status(HttpStatus.OK).json({
+                message: "fetch successful",
+                data: {
+                    consumerCourses
+                }
+            })
+        } catch (err) {
+            this.logger.error(`Failed to retreive consumer's course history`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to retreive consumer's course history",
+            });
+        }
     }
 
     // Save a course for later reference
@@ -62,11 +94,25 @@ export class ConsumerController {
         @Body() courseInfoDto: CourseInfoDto,
         @Res() res
     ) {
-        await this.consumerService.saveCourse(consumerId, courseInfoDto);
+        try {
+            this.logger.log(`Saving course`);
 
-        res.status(HttpStatus.OK).json({
-            message: "course saved successfully",
-        });
+            await this.consumerService.saveCourse(consumerId, courseInfoDto);
+
+            this.logger.log(`Successfully saved the course`);
+
+            res.status(HttpStatus.OK).json({
+                message: "course saved successfully",
+            });
+        } catch (err) {
+            this.logger.error(`Failed to save the course`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to save the course",
+            });
+        }
     }
 
     // View remaining credits
@@ -77,14 +123,28 @@ export class ConsumerController {
         @Param("consumerId") consumerId: string,
         @Res() res
     ) {
-        const consumer = await this.consumerService.getAccountDetails(consumerId);
+        try {
+            this.logger.log(`Getting remaining credits`);
 
-        res.status(HttpStatus.OK).json({
-            message: "fetch successful",
-            data: {
-                credits: consumer.credits
-            }
-        });
+            const consumer = await this.consumerService.getAccountDetails(consumerId);
+
+            this.logger.log(`Successfully fetched credits`);
+
+            res.status(HttpStatus.OK).json({
+                message: "fetch successful",
+                data: {
+                    credits: consumer.credits
+                }
+            });
+        } catch (err) {
+            this.logger.error(`Failed to retreive consumer's credits`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to retreive consumer's credits",
+            });
+        }
     }
 
     // View transaction history
@@ -95,14 +155,28 @@ export class ConsumerController {
         @Param("consumerId") consumerId: string,
         @Res() res
     ) {
-        const transactions = await this.consumerService.viewTransactionHistory(consumerId);
+        try {
+            this.logger.log(`Getting the consumer transaction history`);
 
-        res.status(HttpStatus.OK).json({
-            message: "fetch successful",
-            data: {
-                transactions
-            }
-        });
+            const transactions = await this.consumerService.viewTransactionHistory(consumerId);
+
+            this.logger.log(`Successfully fetched the transaction history`);
+            
+            res.status(HttpStatus.OK).json({
+                message: "fetch successful",
+                data: {
+                    transactions
+                }
+            });
+        } catch (err) {
+            this.logger.error(`Failed to retreive transaction history`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to retreive transaction history",
+            });
+        }
     }
 
     // Give feedback
@@ -114,11 +188,25 @@ export class ConsumerController {
         @Body() feedbackDto: FeedbackDto,
         @Res() res
     ) {
-        await this.consumerService.giveFeedback(consumerId,  feedbackDto);
+        try {
+            this.logger.log(`Giving feedback to course`);
 
-        res.status(HttpStatus.OK).json({
-            message: "feedback saved successfully",
-        });
+            await this.consumerService.giveFeedback(consumerId,  feedbackDto);
+
+            this.logger.log(`Feedback saved successfully`);
+
+            res.status(HttpStatus.OK).json({
+                message: "feedback saved successfully",
+            });
+        } catch (err) {
+            this.logger.error(`Failed to give feedback`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to give feedback",
+            });
+        }
     }
 
     // Select/View course information
@@ -129,11 +217,25 @@ export class ConsumerController {
         @Param("courseId", ParseIntPipe) courseId: number,
         @Res() res
     ) {
-        await this.consumerService.viewCourse(courseId);
+        try {
+            this.logger.log(`Getting course information`);
 
-        res.status(HttpStatus.OK).json({
-            message: "fetch successful"
-        });
+            await this.consumerService.viewCourse(courseId);
+
+            this.logger.log(`Successfully fetched the course information`);
+
+            res.status(HttpStatus.OK).json({
+                message: "fetch successful"
+            });
+        } catch (err) {
+            this.logger.error(`Failed to retreive course information`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to retreive course information",
+            });
+        }
     }
 
     // Search for courses
@@ -144,11 +246,25 @@ export class ConsumerController {
         @Query() competency: string,
         @Res() res
     ) {
-        const course = await this.consumerService.searchCourses(competency);
+        try {
+            this.logger.log(`Searching for courses`);
 
-        res.status(HttpStatus.OK).json({
-            message: "fetch successful"
-        });
+            const course = await this.consumerService.searchCourses(competency);
+
+            this.logger.log(`Successfully fetched the courses`);
+            
+            res.status(HttpStatus.OK).json({
+                message: "fetch successful"
+            });
+        } catch (err) {
+            this.logger.error(`Search failed`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Search failed",
+            });
+        }
     }
 
     // Purchase a course
@@ -157,14 +273,28 @@ export class ConsumerController {
     @Post("/:consumerId/course/purchase")
     async purchaseCourse(
         @Param("consumerId") consumerId: string,
-        @Body() courseInfoDto: CourseInfoDto,
+        @Body() purchaseCourseDto: PurchaseCourseDto,
         @Res() res
     ) {
-        await this.consumerService.purchaseCourse(consumerId, courseInfoDto);
+        try {
+            this.logger.log(`Purchasing course`);
 
-        res.status(HttpStatus.OK).json({
-            message: "purchase successful",
-        });
+            await this.consumerService.purchaseCourse(consumerId, purchaseCourseDto);
+
+            this.logger.log(`Purchase successful`);
+            
+            res.status(HttpStatus.OK).json({
+                message: "purchase successful",
+            });
+        } catch (err) {
+            this.logger.error(`Purchase failed`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Purchase failed",
+            });
+        }
     }
 
     // Get all saved courses
@@ -175,14 +305,28 @@ export class ConsumerController {
         @Param("consumerId") consumerId: string,
         @Res() res
     ) {
-        const consumerCourses = await this.consumerService.getSavedCourses(consumerId);
+        try {
+            this.logger.log(`Getting all saved courses`);
 
-        res.status(HttpStatus.OK).json({
-            message: "fetch successful",
-            data: {
-                consumerCourses
-            }
-        })
+            const consumerCourses = await this.consumerService.getSavedCourses(consumerId);
+
+            this.logger.log(`Successfully fetched all the saved courses`);
+
+            res.status(HttpStatus.OK).json({
+                message: "fetch successful",
+                data: {
+                    consumerCourses
+                }
+            })
+        } catch (err) {
+            this.logger.error(`Failed to retrieve saved courses`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to retrieve saved courses",
+            });
+        }
     }
 
     // View notifications
@@ -193,14 +337,28 @@ export class ConsumerController {
         @Param("consumerId") consumerId: string,
         @Res() res
     ) {
-        const notifications = await this.consumerService.getNotifications(consumerId);
+        try {
+            this.logger.log(`Getting all notifications of the consumer`);
 
-        res.status(HttpStatus.OK).json({
-            message: "fetch successful",
-            data: {
-                notifications
-            }
-        })
+            const notifications = await this.consumerService.getNotifications(consumerId);
+
+            this.logger.log(`Successfully retrieved all the consumer's notifications`);
+
+            res.status(HttpStatus.OK).json({
+                message: "fetch successful",
+                data: {
+                    notifications
+                }
+            })
+        } catch (err) {
+            this.logger.error(`Failed to retrieve notifications`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to retrieve notifications",
+            });
+        }
     }
 
     // Record course completion
@@ -212,11 +370,25 @@ export class ConsumerController {
         @Param("courseId", ParseIntPipe) courseId: number,
         @Res() res
     ) {
-        await this.consumerService.completeCourse(consumerId, courseId);
+        try {
+            this.logger.log(`Recording completion of a course`);
 
-        res.status(HttpStatus.OK).json({
-            message: "course completion successful",
-        });
+            await this.consumerService.completeCourse(consumerId, courseId);
+
+            this.logger.log(`Course completion recorded successfully`);
+            
+            res.status(HttpStatus.OK).json({
+                message: "course completion successful",
+            });
+        } catch (err) {
+            this.logger.error(`Failed to record course completion`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to record course completion",
+            });
+        }
     }
 
     // Request credits to admin
@@ -225,13 +397,27 @@ export class ConsumerController {
     @Post("/:consumerId/request")
     async requestCredits(
         @Param("consumerId") consumerId: string,
-        @Body() createRequestDto: CreateRequestDto,
+        @Body() requestDto: RequestDto,
         @Res() res
     ) {
-        await this.consumerService.requestCredits(consumerId, createRequestDto);
+        try {
+            this.logger.log(`Requesting credits to admin`);
 
-        res.status(HttpStatus.OK).json({
-            message: "credit request successful",
-        });
+            await this.consumerService.requestCredits(consumerId, requestDto);
+
+            this.logger.log(`Successfully sent the request for credits`);
+
+            res.status(HttpStatus.OK).json({
+                message: "credit request successful",
+            });
+        } catch (err) {
+            this.logger.error(`Failed to send the credit request`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to send the credit request",
+            });
+        }
     }
 }

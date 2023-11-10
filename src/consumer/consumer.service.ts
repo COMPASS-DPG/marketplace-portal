@@ -7,9 +7,9 @@ import { TransactionResponse } from './dto/transaction.dto';
 import { FeedbackDto } from './dto/feedback.dto';
 import { NotificationDto } from './dto/notification.dto';
 import { CourseProgressStatus } from '@prisma/client';
-import { CreateRequestDto } from './dto/create-request.dto';
+import { CreateRequestDto, RequestDto, RequestStatus, RequestType } from './dto/create-request.dto';
 import axios from 'axios';
-import { PurchaseDto } from './dto/purchase.dto';
+import { PurchaseCourseDto, PurchaseDto } from './dto/purchase.dto';
 
 @Injectable()
 export class ConsumerService {
@@ -48,27 +48,22 @@ export class ConsumerService {
         // forward to wallet service for fetching credits
         let credits: number;
         const endpoint = `/api/consumers/${consumerId}/credits`;
-        try {
-            const response = await axios.get(process.env.WALLET_SERVICE_URL + endpoint);
-            // console.log(response.data);
-            credits = response.data.data.credits;
 
-            // forward to user service
+        const response = await axios.get(process.env.WALLET_SERVICE_URL + endpoint);
+        // console.log(response.data);
+        credits = response.data.data.credits;
+
+        // forward to user service
 
 
-            return {
-                consumerId,
-                createdAt: consumer.createdAt,
-                updatedAt: consumer.updatedAt,
-                walletId: consumer.walletId,
-                credits,
-                numberOfPurchasedCourses: consumer._count.coursesPurchased
-            }
-        } catch(e) {
-            throw new HttpException(e.response.data, e.status)
-        }
-
-       
+        return {
+            consumerId,
+            createdAt: consumer.createdAt,
+            updatedAt: consumer.updatedAt,
+            walletId: consumer.walletId,
+            credits,
+            numberOfPurchasedCourses: consumer._count.coursesPurchased
+        }       
     }
 
     async viewCoursePurchaseHistory(consumerId: string): Promise<PurchasedCourseDto[]> {
@@ -210,7 +205,7 @@ export class ConsumerService {
         // }
     }
 
-    async purchaseCourse(consumerId: string, courseInfoDto: CourseInfoDto) {
+    async purchaseCourse(consumerId: string, purchaseCourseDto: PurchaseCourseDto) {
 
         const consumer = await this.getConsumer(consumerId);
 
@@ -218,7 +213,7 @@ export class ConsumerService {
             where: {
                 consumerId_courseId: {
                     consumerId,
-                    courseId: courseInfoDto.courseId
+                    courseId: purchaseCourseDto.courseId
                 }
             }
         });
@@ -228,8 +223,8 @@ export class ConsumerService {
             // forward to wallet service for transaction
             let endpoint = `/api/consumers/${consumerId}/purchase`;
             const purchaseBody: PurchaseDto = {
-                providerId: "123e4567-e89b-42d3-a456-556642440002",
-                credits: courseInfoDto.credits
+                providerId: purchaseCourseDto.providerId,
+                credits: purchaseCourseDto.credits
             }
             const walletResponse = await axios.post(process.env.WALLET_SERVICE_URL + endpoint, purchaseBody);
             // console.log(walletResponse.data.data);
@@ -245,7 +240,7 @@ export class ConsumerService {
             await this.prisma.consumerCourseMetadata.create({
                 data: {
                     consumerId,
-                    courseId: courseInfoDto.courseId,
+                    courseId: purchaseCourseDto.courseId,
                     walletTransactionId,
                     becknTransactionId: 0, 
                 }
@@ -260,11 +255,9 @@ export class ConsumerService {
         try {
             await this.prisma.courseInfo.upsert({
                 where: {
-                    courseId: courseInfoDto.courseId
+                    courseId: purchaseCourseDto.courseId
                 },
-                create: {
-                    ...courseInfoDto
-                },
+                create: purchaseCourseDto,
                 update: {}
             });
         } catch {}
@@ -312,16 +305,18 @@ export class ConsumerService {
         }
     }
 
-    async requestCredits(consumerId: string, createRequestDto: CreateRequestDto) {
+    async requestCredits(consumerId: string, requestDto: RequestDto) {
 
         await this.getConsumer(consumerId);
 
-        const endpoint = `/api/requests/`;
-        try {
-            const response = await axios.post(process.env.REQUEST_SERVICE_URL + endpoint, createRequestDto);
-            return response;
-        } catch(e) {
-            throw new HttpException(e.response.data, e.status)
+        const createRequestDto: CreateRequestDto = {
+            userId: consumerId,
+            status: RequestStatus.Pending,
+            type: RequestType.Credit,
+            ...requestDto,
         }
+        const endpoint = `/api/requests/`;
+        const response = await axios.post(process.env.REQUEST_SERVICE_URL + endpoint, createRequestDto);
+        return response;
     }
 }

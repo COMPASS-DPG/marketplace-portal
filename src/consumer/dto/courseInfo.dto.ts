@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsString, Min, IsInt, IsArray, IsUrl } from "class-validator";
+import { IsNotEmpty, IsString, Min, IsInt, IsArray, IsUrl, IsUUID } from "class-validator";
 
 export class CourseInfoDto {
 

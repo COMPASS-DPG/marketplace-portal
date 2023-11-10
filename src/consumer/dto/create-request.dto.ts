@@ -2,53 +2,36 @@ import { Transform, TransformFnParams } from 'class-transformer';
 import {
   IsDate,
   IsEnum,
-  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
 } from 'class-validator';
 
-// export enum RequestStatus {
-//     PENDING,
-//     IN_PROGRESS,
-//     APPROVED,
-//     REJECTED
-// }
-export type RequestStatus = "PENDING" | "IN_PROGRESS" | "APPROVED" | "REJECTED";
+export enum RequestStatus {
+  Pending = "PENDING",
+  InProgress = "IN_PROGRESS",
+  Approved = "APPROVED",
+  Rejected = "REJECTED"
+}
+export enum RequestType {
+  Credit = "CREDIT",
+  InvoiceRequest = "INVOICE_REQUEST",
+  Settlement = "SETTLEMENT"
+}
 
-// export enum RequestType {
-//     CREDIT,
-//     INVOICE_REQUEST,
-//     SETTLEMENT
-// }
-
-export type RequestType = "CREDIT" | "INVOICE_REQUEST" | "SETTLEMENT";
-
-// CreateRequestDto is used for creating a new request.
-export class CreateRequestDto {
-  // User ID associated with the request.
-  @IsNotEmpty()
-  @IsUUID()
-  userId: string;
+// RequestDto is used for creating a new request.
+export class RequestDto {
 
   // Title of the request.
   @IsNotEmpty()
   @IsString()
   title: string;
 
-  // Status of the request
-  @IsNotEmpty()
-  status: RequestStatus;
-
   // Description of the request.
   @IsNotEmpty()
   @IsString()
   description: string;
-
-  // Type of the request
-  @IsNotEmpty()
-  type: RequestType;
 
   // Optional content of the request in JSON format.
   @IsOptional()
@@ -92,5 +75,26 @@ export class CreateRequestDto {
   @IsDate()
   @IsOptional()
   updatedAt?: Date;
+}
+
+
+// CreateRequestDto contains the fields required to forward the request to Request Service 
+// which need not be passed in RequestDto
+export class CreateRequestDto extends RequestDto {
+  
+  // User ID associated with the request.
+  @IsNotEmpty()
+  @IsUUID()
+  userId: string;
+
+  // Status of the request
+  @IsNotEmpty()
+  @IsEnum(RequestStatus)
+  status: RequestStatus;
+
+  // Type of the request
+  @IsNotEmpty()
+  @IsEnum(RequestType)
+  type: RequestType;
 }
 
