@@ -1,4 +1,11 @@
 services:
+
+  redis:
+    image: redis
+    container_name: course-results-redis-container
+    ports:
+      - "6379:6379"
+
   postgres:
     image: postgres:15.3-alpine
     ports:
