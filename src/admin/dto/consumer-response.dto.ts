@@ -2,6 +2,5 @@
 export class ConsumerDtoResponse {
     consumerId: string;
     walletId: number;
-    coursesPurchased: number[];
     savedCourses: number[];
 }

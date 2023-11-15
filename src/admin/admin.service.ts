@@ -83,7 +83,7 @@ export class AdminService {
                 userId: user.consumerId,
                 // userName: fetch from userService,
                 // role: fetch from userService,
-                CoursePurchased: user.coursesPurchased.length,
+                // CoursePurchased: user.coursesPurchased.length,
                 walletBalance: resp.data.data.credits
             }
         })
