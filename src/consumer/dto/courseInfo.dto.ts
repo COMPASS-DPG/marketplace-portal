@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsString, Min, IsInt, IsArray, IsUrl, IsUUID } from "class-validator";
+import { IsNotEmpty, IsString, Min, IsInt, IsArray, IsUrl, IsUUID, ArrayNotEmpty } from "class-validator";
 
 export class CourseInfoDto {
 
@@ -38,6 +38,7 @@ export class CourseInfoDto {
     // list of languages the course is available in
     @IsNotEmpty()
     @IsArray()
+    @ArrayNotEmpty()
     language: string[];
     
     // link for the course content

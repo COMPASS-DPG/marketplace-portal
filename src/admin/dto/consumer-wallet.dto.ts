@@ -1,7 +1,7 @@
-export class ConsumerWalletDto {
-    userId: string;
-    userName: string;
-    role: string;
-    coursesPurchased: number;
-    walletBalance: number;
+export class ConsumerWalletResponseDto {
+    readonly userId: string;
+    readonly userName: string;
+    readonly role: string;
+    readonly coursesPurchased: number;
+    readonly walletBalance: number;
 }

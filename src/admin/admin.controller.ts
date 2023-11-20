@@ -5,7 +5,7 @@ import { LoginDto, LoginResponseDto } from './dto/login.dto';
 import { ConsumerDtoResponse } from './dto/consumer-response.dto';
 import { EditConsumerDto } from './dto/edit-consumer.dto';
 import { CreditRequestDto } from './dto/credit-request.dto';
-import { ConsumerWalletDto } from './dto/consumer-wallet.dto';
+import { ConsumerWalletResponseDto } from './dto/consumer-wallet.dto';
 import { getPrismaErrorStatusAndMessage } from '../utils/utils';
 
 @Controller('admin')
@@ -13,17 +13,7 @@ export class AdminController {
 
     private readonly logger = new Logger(AdminController.name);
 
-    constructor(private adminService: AdminService){}
-
-    async validateAdmin(adminId: string) {
-        this.logger.log(`Validating the adminId`);
-            const admin = await this.adminService.getAdmin(adminId);
-            if(!admin) {
-                throw new NotFoundException("Admin not found with the given id");
-            }
-
-            this.logger.log(`AdminId is valid`)
-    }
+    constructor(private adminService: AdminService) { }
 
     @ApiOperation({ summary: 'Login for admin' })
     @ApiResponse({ status: HttpStatus.OK, type: LoginResponseDto })
@@ -75,7 +65,7 @@ export class AdminController {
 
             this.logger.log(`Fetching all consumers`);
 
-            await this.validateAdmin(adminId);
+            await this.adminService.validateAdmin(adminId);
 
             const consumers = await this.adminService.getAllConsumers();
 
@@ -112,7 +102,7 @@ export class AdminController {
 
             // validate the adminId
             this.logger.log(`Fetching consumer information with consumerId: ${consumerId}`);
-            await this.validateAdmin(adminId);
+            await this.adminService.validateAdmin(adminId);
 
             // validate consumerId
             this.logger.log(`Validating consumerId`);
@@ -155,7 +145,7 @@ export class AdminController {
         // validate the adminId
         try {
             this.logger.log(`Updating consumer information with consumerId: ${consumerId}`);
-            await this.validateAdmin(adminId);
+            await this.adminService.validateAdmin(adminId);
 
 
             // validate consumerId
@@ -197,7 +187,7 @@ export class AdminController {
         
         try {
             this.logger.log(`Adding credits to the consumer wallet with id: ${creditRequestDto.consumerId}`)
-            await this.validateAdmin(adminId);
+            await this.adminService.validateAdmin(adminId);
 
             // validate consumerId
             this.logger.log(`Validating consumerId`);
@@ -234,7 +224,7 @@ export class AdminController {
     async reduceCredits(@Param('adminId', ParseUUIDPipe) adminId: string, @Body() creditRequestDto: CreditRequestDto, @Res() res) {
         try {
             this.logger.log(`Reducing credits from consumer wallet with id: ${creditRequestDto.consumerId}`);
-            await this.validateAdmin(adminId);
+            await this.adminService.validateAdmin(adminId);
 
             await this.adminService.reduceCredits(adminId, creditRequestDto.consumerId, creditRequestDto.credits);
 
@@ -255,13 +245,13 @@ export class AdminController {
     }
 
     @ApiOperation({ summary: "Get all users' wallet info "})
-    @ApiResponse({ status: HttpStatus.OK, type: ConsumerWalletDto, isArray: true })
+    @ApiResponse({ status: HttpStatus.OK, type: ConsumerWalletResponseDto, isArray: true })
     @Get('/:adminId/userWallets')
     async getAllConsumerWallets(@Param('adminId', ParseUUIDPipe) adminId: string, @Res() res) {
 
         try {
             this.logger.log(`Fetching wallet info of all the consumers`);
-            await this.validateAdmin(adminId);
+            await this.adminService.validateAdmin(adminId);
 
             const consumerWallets = await this.adminService.getAllConsumerWallets();
 
@@ -282,14 +272,14 @@ export class AdminController {
     }
 
     @ApiOperation({ summary: "View consumer transaction history"})
-    @ApiResponse({ status: HttpStatus.OK, type: ConsumerWalletDto, isArray: true })
+    @ApiResponse({ status: HttpStatus.OK, type: ConsumerWalletResponseDto, isArray: true })
     @Get('/:adminId/userWallets/transactions/:consumerId')
     async viewTransactionHistory(@Param('adminId', ParseUUIDPipe) adminId: string, @Param('consumerId') consumerId: string, @Res() res) {
         
         
         try {
             this.logger.log(`Fetching transaction history of a consumer with id: ${consumerId}`);
-            await this.validateAdmin(adminId);
+            await this.adminService.validateAdmin(adminId);
             // validate consumerId
             this.logger.log(`Validating consumerId`);
             const consumer = await this.adminService.getConsumer(consumerId);
