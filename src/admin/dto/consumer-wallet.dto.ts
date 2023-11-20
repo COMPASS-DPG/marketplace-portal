@@ -1,5 +1,5 @@
 export class ConsumerWalletDto {
-    userId: number;
+    userId: string;
     userName: string;
     role: string;
     coursesPurchased: number;

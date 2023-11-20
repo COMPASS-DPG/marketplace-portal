@@ -5,7 +5,6 @@ const prisma = new PrismaClient();
 
 const main = async () => {
     // const response = await  prisma.consumerMetadata.findMany();
-    // console.log(response)
 
     const admin = await prisma.admin.create({
         data: {
@@ -14,7 +13,7 @@ const main = async () => {
             password: "asdfghjkl"
         }
     });
-    console.log("admin: ", admin)
+
     const consumers = await prisma.consumerMetadata.createMany({
         data: [{
             consumerId: "123e4567-e89b-42d3-a456-556642440000",

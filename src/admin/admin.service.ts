@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { EditConsumerDto } from './dto/edit-consumer.dto';
 import axios from 'axios';
@@ -13,7 +13,7 @@ export class AdminService {
             where: { email: email, password: password }
         });
         if(admin == null) {
-            throw new Error(`Admin not found with email ${email} and password ${password}`);
+            throw new NotFoundException(`Admin not found with email ${email} and password ${password}`);
         }
         return admin.id;
     }
