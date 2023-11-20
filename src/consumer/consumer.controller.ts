@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpStatus, Logger, Param, ParseIntPipe, Patch, Post, Query, Res } from "@nestjs/common";
+import { Body, Controller, Get, HttpStatus, Logger, Param, ParseIntPipe, ParseUUIDPipe, Patch, Post, Query, Res } from "@nestjs/common";
 import { ConsumerService } from "./consumer.service";
 import { ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { ConsumerAccountDto, CreditsDto } from "./dto/account.dto";
@@ -25,7 +25,7 @@ export class ConsumerController {
     @ApiResponse({ status: HttpStatus.OK })
     @Post("/:consumerId")
     async consumerSignUp(
-        @Param("consumerId") consumerId: string,
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
         @Res() res
     ) {
         try {
@@ -54,7 +54,7 @@ export class ConsumerController {
     @ApiResponse({ status: HttpStatus.OK, type: ConsumerAccountDto })
     @Get("/:consumerId")
     async viewAccount(
-        @Param("consumerId") consumerId: string,
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
         @Res() res
     ) {
         try {
@@ -86,7 +86,7 @@ export class ConsumerController {
     @ApiResponse({ status: HttpStatus.OK, type: [PurchasedCourseDto] })
     @Get("/:consumerId/course/purchases")
     async viewCourseHistory(
-        @Param("consumerId") consumerId: string,
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
         @Res() res
     ) {
         try {
@@ -119,7 +119,7 @@ export class ConsumerController {
     @ApiResponse({ status: HttpStatus.OK })
     @Post("/:consumerId/course/save")
     async saveCourse(
-        @Param("consumerId") consumerId: string,
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
         @Body() courseInfoDto: CourseInfoDto,
         @Res() res
     ) {
@@ -149,7 +149,7 @@ export class ConsumerController {
     @ApiResponse({ status: HttpStatus.OK, type: CreditsDto })
     @Get("/:consumerId/wallet/credits")
     async viewCredits(
-        @Param("consumerId") consumerId: string,
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
         @Res() res
     ) {
         try {
@@ -181,7 +181,7 @@ export class ConsumerController {
     @ApiResponse({ status: HttpStatus.OK, type: [TransactionResponse] })
     @Get("/:consumerId/wallet/transactions")
     async viewTransactionHistory(
-        @Param("consumerId") consumerId: string,
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
         @Res() res
     ) {
         try {
@@ -213,7 +213,7 @@ export class ConsumerController {
     @ApiResponse({ status: HttpStatus.OK })
     @Patch("/:consumerId/course/feedback")
     async giveFeedback(
-        @Param("consumerId") consumerId: string,
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
         @Body() feedbackDto: FeedbackDto,
         @Res() res
     ) {
@@ -307,7 +307,7 @@ export class ConsumerController {
     @ApiResponse({ status: HttpStatus.OK })
     @Post("/:consumerId/course/purchase")
     async purchaseCourse(
-        @Param("consumerId") consumerId: string,
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
         @Body() purchaseCourseDto: PurchaseCourseDto,
         @Res() res
     ) {
@@ -337,7 +337,7 @@ export class ConsumerController {
     @ApiResponse({ status: HttpStatus.OK, type: [CourseInfoDto] })
     @Get("/:consumerId/course/saved")
     async getSavedCourses(
-        @Param("consumerId") consumerId: string,
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
         @Res() res
     ) {
         try {
@@ -369,7 +369,7 @@ export class ConsumerController {
     @ApiResponse({ status: HttpStatus.OK, type: [NotificationDto] })
     @Get("/:consumerId/notifications")
     async viewNotifications(
-        @Param("consumerId") consumerId: string,
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
         @Res() res
     ) {
         try {
@@ -401,7 +401,7 @@ export class ConsumerController {
     @ApiResponse({ status: HttpStatus.OK })
     @Patch("/:consumerId/course/:courseId/complete")
     async onCourseCompletion(
-        @Param("consumerId") consumerId: string,
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
         @Param("courseId", ParseIntPipe) courseId: number,
         @Res() res
     ) {
@@ -431,7 +431,7 @@ export class ConsumerController {
     @ApiResponse({ status: HttpStatus.OK })
     @Post("/:consumerId/request")
     async requestCredits(
-        @Param("consumerId") consumerId: string,
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
         @Body() requestDto: RequestDto,
         @Res() res
     ) {
