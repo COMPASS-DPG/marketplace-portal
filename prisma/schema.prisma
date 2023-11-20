@@ -13,59 +13,57 @@ datasource db {
 // Here goes models
 
 enum CourseProgressStatus {
-  inProgress
-  completed
+  IN_PROGRESS
+  COMPLETED
 }
 
 enum NotificationStatus {
-  viewed
-  notViewed
+  VIEWED
+  NOT_VIEWED
 }
 
 model ConsumerMetadata {
-  consumerId        String                    @id 
-  walletId          Int                       @unique
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
-  savedCourses      Int[]                     @default([])
-  notifications     Notification[]        
-  coursesPurchased  ConsumerCourseMetadata[]         
+  consumerId              String                    @id
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  savedCourses            Int[]                     @default([])
+  Notifications           Notification[]        
+  ConsumerCourseMetadata  ConsumerCourseMetadata[]         
 }
 
 model ConsumerCourseMetadata {
   id                  Int                   @id @default(autoincrement())
   consumerId          String    
   courseId            Int       
-  status              CourseProgressStatus  @default(inProgress)
+  status              CourseProgressStatus  @default(IN_PROGRESS)
   walletTransactionId Int
   becknTransactionId  Int
   rating              Int?
   feedback            String?
-  course              CourseInfo            @relation(fields: [courseId], references: [courseId])
-  consumer            ConsumerMetadata      @relation(fields: [consumerId], references: [consumerId])
+  CourseInfo          CourseInfo            @relation(fields: [courseId], references: [courseId])
+  ConsumerMetadata    ConsumerMetadata      @relation(fields: [consumerId], references: [consumerId])
 
   @@unique([consumerId, courseId])
 }
 
 model CourseInfo {
-  courseId            Int                     @id
-  bppId               String
-  title               String
-  description         String
-  credits             Int
-  imageLink           String
-  language            String[]
-  courseLink          String
-  providerName        String
-  purchases           ConsumerCourseMetadata[]
+  courseId                Int                       @id
+  bppId                   String
+  title                   String
+  description             String
+  credits                 Int
+  imageLink               String
+  language                String[]
+  courseLink              String
+  providerName            String
+  ConsumerCourseMetadata  ConsumerCourseMetadata[]
 }
 
 model Admin {
   id        String     @id @default(uuid()) 
   name      String  
-  email     String  @unique
-  password  String 
-  walletId  Int     @unique
+  email     String     @unique
+  password  String
 }
 
 model Notification {
@@ -73,6 +71,6 @@ model Notification {
   consumerId          String    
   text                String
   link                String
-  status              NotificationStatus  @default(notViewed)
-  consumer            ConsumerMetadata    @relation(fields: [consumerId], references: [consumerId])
+  status              NotificationStatus  @default(NOT_VIEWED)
+  ConsumerMetadata    ConsumerMetadata    @relation(fields: [consumerId], references: [consumerId])
 }

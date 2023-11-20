@@ -28,6 +28,14 @@ export class ConsumerService {
         return consumer;
     }
 
+    async createConsumer(consumerId: string) {
+        await this.prisma.consumerMetadata.create({
+            data: {
+                consumerId,
+            }
+        });
+    }
+
     async getAccountDetails(consumerId: string): Promise<ConsumerAccountDto> {
         
         const consumer = await this.prisma.consumerMetadata.findUnique({
@@ -37,7 +45,7 @@ export class ConsumerService {
             include: {
                 _count: {
                     select: {
-                        coursesPurchased: true
+                        ConsumerCourseMetadata: true
                     }
                 }
             }
@@ -60,9 +68,8 @@ export class ConsumerService {
             consumerId,
             createdAt: consumer.createdAt,
             updatedAt: consumer.updatedAt,
-            walletId: consumer.walletId,
             credits,
-            numberOfPurchasedCourses: consumer._count.coursesPurchased
+            numberOfPurchasedCourses: consumer._count.ConsumerCourseMetadata
         }       
     }
 
@@ -73,7 +80,7 @@ export class ConsumerService {
                 consumerId
             },
             include: {
-                course: true
+                CourseInfo: true
             }
         });
     }
@@ -148,17 +155,15 @@ export class ConsumerService {
         if(!consumerCourseData)
             throw new NotFoundException("This user has not subscribed to this course");
         
-        if(consumerCourseData.status != CourseProgressStatus.completed)
+        if(consumerCourseData.status != CourseProgressStatus.COMPLETED)
             throw new BadRequestException("User has not completed the course");
 
         // forward to course manager
         const endpoint = `/api/course/${feedbackDto.courseId}/feedback/${consumerId}`;
-        try {
-            const response = await axios.patch(process.env.COURSE_MANAGER_URL + endpoint);
-            // console.log(response);
-        } catch(e) {
-            throw new HttpException(e.response.data, e.status)
-        }
+
+        const response = await axios.patch(process.env.COURSE_MANAGER_URL + endpoint);
+        // console.log(response);
+ 
 
         // update marketplace metadata model
         await this.prisma.consumerCourseMetadata.update({
@@ -180,29 +185,20 @@ export class ConsumerService {
         // forward to BPP
 
         // code to directly forward to course manager
-        // const endpoint = `/api/course/${courseId}`;
-        // try {
-        //     const response = await axios.get(process.env.COURSE_MANAGER_URL + endpoint);
-        //     return response.data;
-        //     // console.log(response);
-        // } catch(e) {
-        //     throw new HttpException(e.response.data, e.status)
-        // }
+        const endpoint = `/api/course/${courseId}`;
+        const response = await axios.get(process.env.COURSE_MANAGER_URL + endpoint);
+        return response.data.data;
     }
 
-    async searchCourses(competency: string) {
+    async searchCourses(searchInput: string) {
 
         // forward to BPP
 
         // code to directly forward to course manager
-        // const endpoint = `/api/course/search`;
-        // try {
-        //     const response = await axios.get(process.env.COURSE_MANAGER_URL + endpoint);
-        //     // console.log(response);
-        //     return response.data;
-        // } catch(e) {
-        //     throw new HttpException(e.response.data, e.status)
-        // }
+        const endpoint = `/api/course/search/${searchInput}`;
+        const response = await axios.get(process.env.COURSE_MANAGER_URL + endpoint);
+        // console.log(response.data);
+        return response.data.data;
     }
 
     async purchaseCourse(consumerId: string, purchaseCourseDto: PurchaseCourseDto) {
@@ -219,7 +215,6 @@ export class ConsumerService {
         });
         if(consumerCourseData)
             throw new BadRequestException("Course Already purchased");
-        try {
             // forward to wallet service for transaction
             let endpoint = `/api/consumers/${consumerId}/purchase`;
             const purchaseBody: PurchaseDto = {
@@ -232,10 +227,9 @@ export class ConsumerService {
 
 
             // forward to course manager for purchase
-            // endpoint = `/api/course/${courseInfoDto.courseId}/purchase/${consumerId}`;
+            endpoint = `/api/course/${purchaseCourseDto.courseId}/purchase/${consumerId}`;
 
-            // const courseResponse = await axios.post(process.env.COURSE_MANAGER_URL + endpoint);
-            // console.log(response);
+            await axios.post(process.env.COURSE_MANAGER_URL + endpoint);
 
             await this.prisma.consumerCourseMetadata.create({
                 data: {
@@ -245,9 +239,6 @@ export class ConsumerService {
                     becknTransactionId: 0, 
                 }
             });
-        } catch(e) {
-            throw new HttpException(e, e.status)
-        }
 
         //  Create an entry if it does not exist. No action if it is already present. 
         //  There may be a race condition for inserting courseInfo for the same course.
@@ -297,7 +288,7 @@ export class ConsumerService {
                     }
                 },
                 data: {
-                    status: 'completed'
+                    status: CourseProgressStatus.COMPLETED
                 }
             });
         } catch {

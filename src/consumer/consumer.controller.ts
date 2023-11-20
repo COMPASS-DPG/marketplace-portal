@@ -7,7 +7,7 @@ import { CourseInfoDto } from "./dto/courseInfo.dto";
 import { TransactionResponse } from "./dto/transaction.dto";
 import { FeedbackDto } from "./dto/feedback.dto";
 import { NotificationDto } from "./dto/notification.dto";
-import { CreateRequestDto, RequestDto } from "./dto/create-request.dto";
+import { RequestDto } from "./dto/create-request.dto";
 import { PurchaseCourseDto } from "./dto/purchase.dto";
 import { getPrismaErrorStatusAndMessage } from "src/utils/utils";
 
@@ -20,10 +20,39 @@ export class ConsumerController {
         private consumerService: ConsumerService,
     ) {}
 
+    // Create consumer entry during signup
+    @ApiOperation({ summary: 'Consumer sign up' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @Post("/:consumerId")
+    async consumerSignUp(
+        @Param("consumerId") consumerId: string,
+        @Res() res
+    ) {
+        try {
+            this.logger.log(`Signing up consumer ${consumerId}`);
+
+            await this.consumerService.createConsumer(consumerId);
+
+            this.logger.log(`Successfully signed up`);
+
+            res.status(HttpStatus.OK).json({
+                message: "sign up successful",
+            })
+        } catch (err) {
+            this.logger.error(`Failed to sign up consumer`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to sign up consumer",
+            });
+        }
+    }
+
     // view account details
     @ApiOperation({ summary: 'view account details' })
     @ApiResponse({ status: HttpStatus.OK, type: ConsumerAccountDto })
-    @Get("/:consumerId/profile")
+    @Get("/:consumerId")
     async viewAccount(
         @Param("consumerId") consumerId: string,
         @Res() res
@@ -52,8 +81,8 @@ export class ConsumerController {
         }
     }
 
-    // View course history
-    @ApiOperation({ summary: 'View course history' })
+    // View course purchase history
+    @ApiOperation({ summary: 'View course purchase history' })
     @ApiResponse({ status: HttpStatus.OK, type: [PurchasedCourseDto] })
     @Get("/:consumerId/course/purchases")
     async viewCourseHistory(
@@ -212,7 +241,7 @@ export class ConsumerController {
     // Select/View course information
     @ApiOperation({ summary: 'View course information' })
     @ApiResponse({ status: HttpStatus.OK })
-    @Get("/courses/:courseId")
+    @Get("/course/:courseId")
     async viewCourse(
         @Param("courseId", ParseIntPipe) courseId: number,
         @Res() res
@@ -220,12 +249,15 @@ export class ConsumerController {
         try {
             this.logger.log(`Getting course information`);
 
-            await this.consumerService.viewCourse(courseId);
+            const course = await this.consumerService.viewCourse(courseId);
 
             this.logger.log(`Successfully fetched the course information`);
 
             res.status(HttpStatus.OK).json({
-                message: "fetch successful"
+                message: "fetch successful",
+                data: {
+                    course
+                }
             });
         } catch (err) {
             this.logger.error(`Failed to retreive course information`);
@@ -241,20 +273,23 @@ export class ConsumerController {
     // Search for courses
     @ApiOperation({ summary: 'Search for courses' })
     @ApiResponse({ status: HttpStatus.OK })
-    @Get("/course/search?q=<query/competency>")
+    @Get("/course/search/:searchInput")
     async searchCourses(
-        @Query() competency: string,
+        @Param("searchInput") searchInput: string,
         @Res() res
     ) {
         try {
             this.logger.log(`Searching for courses`);
 
-            const course = await this.consumerService.searchCourses(competency);
+            const courses = await this.consumerService.searchCourses(searchInput);
 
             this.logger.log(`Successfully fetched the courses`);
             
             res.status(HttpStatus.OK).json({
-                message: "fetch successful"
+                message: "fetch successful",
+                data: {
+                    courses
+                }
             });
         } catch (err) {
             this.logger.error(`Search failed`);

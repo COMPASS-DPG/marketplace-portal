@@ -11,5 +11,5 @@ export class PurchasedCourseDto {
     readonly becknTransactionId: number;
     readonly rating: number | null;
     readonly feedback: string | null;
-    readonly course: CourseInfoDto;
+    readonly CourseInfo: CourseInfoDto;
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpStatus, NotFoundException, Param, ParseIntPipe, Patch, Post, Res, Logger, ParseUUIDPipe } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, NotFoundException, Param, Patch, Post, Res, Logger, ParseUUIDPipe } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { LoginDto, LoginResponseDto } from './dto/login.dto';
@@ -73,7 +73,7 @@ export class AdminController {
 
             this.logger.log(`AdminId is valid`)
 
-            const consumers = this.adminService.getAllConsumers();
+            const consumers = await this.adminService.getAllConsumers();
 
             this.logger.log(`Fetched all consumers successfully`);
 
@@ -97,7 +97,7 @@ export class AdminController {
     @ApiOperation({ summary: 'View a consumer information on marketplace' })
     @ApiResponse({ status: HttpStatus.OK, type: ConsumerDtoResponse })
     @Get("/:adminId/consumers/:consumerId")
-    // View all consumers on marketplace
+    // View a consumer information on marketplace
     async getConsumer(
         @Param("adminId", ParseUUIDPipe) adminId: string,
         @Param("consumerId", ParseUUIDPipe) consumerId: string,
@@ -145,7 +145,7 @@ export class AdminController {
     @ApiOperation({ summary: 'Edit consumer profile information' })
     @ApiResponse({ status: HttpStatus.OK, type: ConsumerDtoResponse })
     @Patch("/:adminId/consumers/:consumerId")
-    // View all consumers on marketplace
+    // Edit consumer profile information
     async editConsumer(
         @Param("adminId", ParseUUIDPipe) adminId: string,
         @Param("consumerId", ParseUUIDPipe) consumerId: string,
@@ -176,7 +176,7 @@ export class AdminController {
 
             this.logger.log(`consumerId validation successful`);
 
-            const updatedConsumer = await this.adminService.updateConsumer(editConsumerDto);
+            const updatedConsumer = await this.adminService.updateConsumer(consumerId, editConsumerDto);
 
             this.logger.log(`Consumer information updated successfully`);
             res.status(HttpStatus.OK).json({
@@ -205,12 +205,23 @@ export class AdminController {
             this.logger.log(`Adding credits to the consumer wallet with id: ${creditRequestDto.consumerId}`)
             this.logger.log(`Validating adminId`);
 
-            const admin = this.adminService.getAdmin(adminId);
+            const admin = await this.adminService.getAdmin(adminId);
             if(!admin) {
                 throw new NotFoundException(`Invalid adminId`);
             }
 
             this.logger.log(`adminId validation successful`);
+
+            // validate consumerId
+            this.logger.log(`Validating consumerId`);
+
+            const consumer = await this.adminService.getConsumer(creditRequestDto.consumerId);
+
+            if(!consumer) {
+                throw new NotFoundException("Consumer not found with the given id");
+            }
+
+            this.logger.log(`consumerId validation successful`);
 
             await this.adminService.addCredits(adminId, creditRequestDto.consumerId, creditRequestDto.credits);
 
@@ -275,7 +286,7 @@ export class AdminController {
             }
             this.logger.log(`adminId validation successful`);
 
-            const consumerWallets = this.adminService.getAllConsumerWallets();
+            const consumerWallets = await this.adminService.getAllConsumerWallets();
 
             this.logger.log(`Successfully fetched the wallet info of all the consumers on the marketplace`)
             res.status(HttpStatus.OK).json({
@@ -293,10 +304,10 @@ export class AdminController {
         }
     }
 
-    @ApiOperation({ summary: "Get a user wallet info"})
+    @ApiOperation({ summary: "View consumer transaction history"})
     @ApiResponse({ status: HttpStatus.OK, type: ConsumerWalletDto, isArray: true })
-    @Get('/:adminId/userWallets/:consumerId')
-    async getPurchaseHistory(@Param('adminId', ParseUUIDPipe) adminId: string, @Param('consumerId') consumerId: string, @Res() res) {
+    @Get('/:adminId/userWallets/transactions/:consumerId')
+    async viewTransactionHistory(@Param('adminId', ParseUUIDPipe) adminId: string, @Param('consumerId') consumerId: string, @Res() res) {
         
         
         try {
@@ -316,11 +327,11 @@ export class AdminController {
             }
             this.logger.log(`consumerId validation successful`);
 
-            const consumerWallets = this.adminService.getTransactions(adminId, consumerId);
+            const consumerTransactions = await this.adminService.getTransactions(adminId, consumerId);
             this.logger.log(`Successfully fetched the transaction history of the consumer with id: ${consumerId}`);
             res.status(HttpStatus.OK).json({
-                message: `Fetched user wallet info`,
-                data: consumerWallets
+                message: `Fetched consumer transactions`,
+                data: consumerTransactions
             });
         } catch (err) {
             this.logger.error(`Failed to fetch transaction history of the given consumer.`);
