@@ -5,7 +5,7 @@ import { PurchasedCourseDto } from './dto/purchasedCourse.dto';
 import { CourseInfoDto } from './dto/courseInfo.dto';
 import { TransactionResponse } from './dto/transaction.dto';
 import { FeedbackDto } from './dto/feedback.dto';
-import { NotificationDto } from './dto/notification.dto';
+import { CreateNotificationDto, NotificationResponseDto } from './dto/notification.dto';
 import { CourseProgressStatus } from '@prisma/client';
 import { CreateRequestDto, RequestDto, RequestStatus, RequestType } from './dto/create-request.dto';
 import axios from 'axios';
@@ -85,7 +85,7 @@ export class ConsumerService {
         });
     }
 
-    async saveCourse(consumerId: string, courseInfoDto: CourseInfoDto) {
+    async saveOrUnsaveCourse(consumerId: string, courseInfoDto: CourseInfoDto) {
 
         const consumer = await this.getConsumer(consumerId);
 
@@ -195,8 +195,9 @@ export class ConsumerService {
         // forward to BPP
 
         // code to directly forward to course manager
-        const endpoint = `/api/course/search/${searchInput}`;
-        const response = await axios.get(process.env.COURSE_MANAGER_URL + endpoint);
+        const endpoint = `/api/course/search`;
+        const queryParams = `?searchInput=${searchInput}`
+        const response = await axios.get(process.env.COURSE_MANAGER_URL + endpoint + queryParams);
         // console.log(response.data);
         return response.data.data;
     }
@@ -215,32 +216,32 @@ export class ConsumerService {
         });
         if(consumerCourseData)
             throw new BadRequestException("Course Already purchased");
-            // forward to wallet service for transaction
-            let endpoint = `/api/consumers/${consumerId}/purchase`;
-            const purchaseBody: PurchaseDto = {
-                providerId: purchaseCourseDto.providerId,
-                credits: purchaseCourseDto.credits
+
+        // forward to wallet service for transaction
+        let endpoint = `/api/consumers/${consumerId}/purchase`;
+        const purchaseBody: PurchaseDto = {
+            providerId: purchaseCourseDto.providerId,
+            credits: purchaseCourseDto.credits
+        }
+        const walletResponse = await axios.post(process.env.WALLET_SERVICE_URL + endpoint, purchaseBody);
+        // console.log(walletResponse.data.data);
+        let walletTransactionId = walletResponse.data.data.transaction.transactionId;
+
+
+        // forward to course manager for purchase
+        endpoint = `/api/course/${purchaseCourseDto.courseId}/purchase/${consumerId}`;
+
+        await axios.post(process.env.COURSE_MANAGER_URL + endpoint);
+
+        await this.prisma.consumerCourseMetadata.create({
+            data: {
+                consumerId,
+                courseId: purchaseCourseDto.courseId,
+                walletTransactionId,
+                becknTransactionId: 0, 
             }
-            const walletResponse = await axios.post(process.env.WALLET_SERVICE_URL + endpoint, purchaseBody);
-            // console.log(walletResponse.data.data);
-            let walletTransactionId = walletResponse.data.data.transaction.transactionId;
-
-
-            // forward to course manager for purchase
-            endpoint = `/api/course/${purchaseCourseDto.courseId}/purchase/${consumerId}`;
-
-            await axios.post(process.env.COURSE_MANAGER_URL + endpoint);
-
-            await this.prisma.consumerCourseMetadata.create({
-                data: {
-                    consumerId,
-                    courseId: purchaseCourseDto.courseId,
-                    walletTransactionId,
-                    becknTransactionId: 0, 
-                }
-            });
-
-        //  Create an entry if it does not exist. No action if it is already present. 
+        });
+        //  Create an entry to add the course info if it does not exist. No action if it is already present. 
         //  There may be a race condition for inserting courseInfo for the same course.
         //  In such a case, insertion happens once and no error is thrown
         try {
@@ -267,11 +268,21 @@ export class ConsumerService {
         });
     }
 
-    async getNotifications(consumerId: string): Promise<NotificationDto[]> {
+    async getNotifications(consumerId: string): Promise<NotificationResponseDto[]> {
 
         return this.prisma.notification.findMany({
             where: {
                 consumerId
+            }
+        });
+    }
+
+    async createNotification(consumerId: string, createNotificationDto: CreateNotificationDto) {
+
+        await this.prisma.notification.create({
+            data: {
+                consumerId,
+                ...createNotificationDto
             }
         });
     }

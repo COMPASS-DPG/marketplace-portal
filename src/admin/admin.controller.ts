@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpStatus, NotFoundException, Param, Patch, Post, Res, Logger, ParseUUIDPipe } from '@nestjs/common';
 import { AdminService } from './admin.service';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { LoginDto, LoginResponseDto } from './dto/login.dto';
 import { ConsumerDtoResponse } from './dto/consumer-response.dto';
 import { EditConsumerDto } from './dto/edit-consumer.dto';
@@ -9,6 +9,7 @@ import { ConsumerWalletDto } from './dto/consumer-wallet.dto';
 import { getPrismaErrorStatusAndMessage } from '../utils/utils';
 
 @Controller('admin')
+@ApiTags('admin')
 export class AdminController {
 
     private readonly logger = new Logger(AdminController.name);

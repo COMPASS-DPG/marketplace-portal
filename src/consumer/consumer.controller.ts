@@ -1,18 +1,19 @@
 import { Body, Controller, Get, HttpStatus, Logger, Param, ParseIntPipe, ParseUUIDPipe, Patch, Post, Query, Res } from "@nestjs/common";
 import { ConsumerService } from "./consumer.service";
-import { ApiOperation, ApiResponse } from "@nestjs/swagger";
+import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ConsumerAccountDto, CreditsDto } from "./dto/account.dto";
 import { PurchasedCourseDto } from "./dto/purchasedCourse.dto";
 import { CourseInfoDto } from "./dto/courseInfo.dto";
 import { TransactionResponse } from "./dto/transaction.dto";
 import { FeedbackDto } from "./dto/feedback.dto";
-import { NotificationDto } from "./dto/notification.dto";
+import { CreateNotificationDto, NotificationResponseDto } from "./dto/notification.dto";
 import { RequestDto } from "./dto/create-request.dto";
 import { PurchaseCourseDto } from "./dto/purchase.dto";
 import { getPrismaErrorStatusAndMessage } from "src/utils/utils";
 
 
 @Controller('consumer')
+@ApiTags('consumer')
 export class ConsumerController {
     private readonly logger = new Logger(ConsumerController.name);
 
@@ -115,7 +116,7 @@ export class ConsumerController {
 
     // Save a course for later reference
     // This API will also be used to unsave a course if it was previously saved
-    @ApiOperation({ summary: 'Save or unsave a course' })
+    @ApiOperation({ summary: 'Save a course' })
     @ApiResponse({ status: HttpStatus.OK })
     @Post("/:consumerId/course/save")
     async saveCourse(
@@ -126,7 +127,7 @@ export class ConsumerController {
         try {
             this.logger.log(`Saving course`);
 
-            await this.consumerService.saveCourse(consumerId, courseInfoDto);
+            await this.consumerService.saveOrUnsaveCourse(consumerId, courseInfoDto);
 
             this.logger.log(`Successfully saved the course`);
 
@@ -140,6 +141,35 @@ export class ConsumerController {
             res.status(statusCode).json({
                 statusCode, 
                 message: errorMessage || "Failed to save the course",
+            });
+        }
+    }
+
+    @ApiOperation({ summary: 'Unsave a course' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @Patch("/:consumerId/course/unsave")
+    async unsaveCourse(
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
+        @Body() courseInfoDto: CourseInfoDto,
+        @Res() res
+    ) {
+        try {
+            this.logger.log(`Removing course from saved courses`);
+
+            await this.consumerService.saveOrUnsaveCourse(consumerId, courseInfoDto);
+
+            this.logger.log(`Successfully unsaved the course`);
+
+            res.status(HttpStatus.OK).json({
+                message: "course unsaved successfully",
+            });
+        } catch (err) {
+            this.logger.error(`Failed to unsave course`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to unsave course",
             });
         }
     }
@@ -238,6 +268,38 @@ export class ConsumerController {
         }
     }
 
+    // Search for courses
+    @ApiOperation({ summary: 'Search for courses' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @Get("/course/search")
+    async searchCourses(
+        @Query('searchInput') searchInput: string,
+        @Res() res
+    ) {
+        try {
+            this.logger.log(`Searching for courses`);
+
+            const courses = await this.consumerService.searchCourses(searchInput);
+
+            this.logger.log(`Successfully fetched the courses`);
+            
+            res.status(HttpStatus.OK).json({
+                message: "fetch successful",
+                data: {
+                    courses
+                }
+            });
+        } catch (err) {
+            this.logger.error(`Search failed`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Search failed",
+            });
+        }
+    }
+
     // Select/View course information
     @ApiOperation({ summary: 'View course information' })
     @ApiResponse({ status: HttpStatus.OK })
@@ -266,38 +328,6 @@ export class ConsumerController {
             res.status(statusCode).json({
                 statusCode, 
                 message: errorMessage || "Failed to retreive course information",
-            });
-        }
-    }
-
-    // Search for courses
-    @ApiOperation({ summary: 'Search for courses' })
-    @ApiResponse({ status: HttpStatus.OK })
-    @Get("/course/search/:searchInput")
-    async searchCourses(
-        @Param("searchInput") searchInput: string,
-        @Res() res
-    ) {
-        try {
-            this.logger.log(`Searching for courses`);
-
-            const courses = await this.consumerService.searchCourses(searchInput);
-
-            this.logger.log(`Successfully fetched the courses`);
-            
-            res.status(HttpStatus.OK).json({
-                message: "fetch successful",
-                data: {
-                    courses
-                }
-            });
-        } catch (err) {
-            this.logger.error(`Search failed`);
-
-            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
-            res.status(statusCode).json({
-                statusCode, 
-                message: errorMessage || "Search failed",
             });
         }
     }
@@ -366,7 +396,7 @@ export class ConsumerController {
 
     // View notifications
     @ApiOperation({ summary: 'View notifications' })
-    @ApiResponse({ status: HttpStatus.OK, type: [NotificationDto] })
+    @ApiResponse({ status: HttpStatus.OK, type: [NotificationResponseDto] })
     @Get("/:consumerId/notifications")
     async viewNotifications(
         @Param("consumerId", ParseUUIDPipe) consumerId: string,
@@ -392,6 +422,36 @@ export class ConsumerController {
             res.status(statusCode).json({
                 statusCode, 
                 message: errorMessage || "Failed to retrieve notifications",
+            });
+        }
+    }
+
+    // View notifications
+    @ApiOperation({ summary: 'Generate notification' })
+    @ApiResponse({ status: HttpStatus.CREATED })
+    @Post("/:consumerId/notifications")
+    async createConsumerNotification(
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
+        @Body() createNotificationDto: CreateNotificationDto,
+        @Res() res
+    ) {
+        try {
+            this.logger.log(`Generating a notification`);
+
+            await this.consumerService.createNotification(consumerId, createNotificationDto);
+
+            this.logger.log(`Successfully generated notification`);
+
+            res.status(HttpStatus.CREATED).json({
+                message: "notification saved successfully",
+            })
+        } catch (err) {
+            this.logger.error(`Failed to generate notification`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to generate notification",
             });
         }
     }
