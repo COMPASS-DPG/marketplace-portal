@@ -7,6 +7,7 @@ import { RedisStoreModule } from 'src/redis-store/redis-store.module';
 @Module({
   controllers: [AdminController],
   providers: [AdminService],
-  imports: [PrismaModule]
+  imports: [PrismaModule],
+  exports: [AdminService],
 })
 export class AdminModule {}

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { EditConsumerDto } from './dto/edit-consumer.dto';
 import axios from 'axios';
@@ -6,14 +6,22 @@ import axios from 'axios';
 @Injectable()
 export class AdminService {
 
-    constructor(private prisma: PrismaService) {}
+    constructor(private prisma: PrismaService) { }
+
+    async validateAdmin(adminId: string) {
+        const admin = await this.getAdmin(adminId);
+        if (!admin) {
+            throw new NotFoundException(`Admin with id #${admin} not found`);
+        }
+        return true
+    }
 
     async login(email: string, password: string) {
         const admin = await this.prisma.admin.findUnique({
             where: { email: email, password: password }
         });
-        if(admin == null) {
-            throw new Error(`Admin not found with email ${email} and password ${password}`);
+        if (admin == null) {
+            throw new BadRequestException(`Invalid credentials`);
         }
         return admin.id;
     }
@@ -22,7 +30,9 @@ export class AdminService {
         const admin = await this.prisma.admin.findUnique({
             where: { id: adminId }
         });
-
+        if (!admin) {
+            throw new NotFoundException(`Admin with id #${admin} not found`);
+        }
         return admin;
     }
 
