@@ -3,13 +3,14 @@ import { ConsumerService } from "./consumer.service";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ConsumerAccountDto, CreditsDto } from "./dto/account.dto";
 import { PurchasedCourseDto } from "./dto/purchasedCourse.dto";
-import { CourseInfoDto } from "./dto/courseInfo.dto";
+import { CourseInfoDto, UnsaveCourseDto } from "./dto/courseInfo.dto";
 import { TransactionResponse } from "./dto/transaction.dto";
 import { FeedbackDto } from "./dto/feedback.dto";
 import { CreateNotificationDto, NotificationResponseDto } from "./dto/notification.dto";
 import { RequestDto } from "./dto/create-request.dto";
 import { PurchaseCourseDto } from "./dto/purchase.dto";
 import { getPrismaErrorStatusAndMessage } from "src/utils/utils";
+import { ConsumerSignupDto } from "./dto/signup.dto";
 
 
 @Controller('consumer')
@@ -24,15 +25,15 @@ export class ConsumerController {
     // Create consumer entry during signup
     @ApiOperation({ summary: 'Consumer sign up' })
     @ApiResponse({ status: HttpStatus.OK })
-    @Post("/:consumerId")
+    @Post()
     async consumerSignUp(
-        @Param("consumerId", ParseUUIDPipe) consumerId: string,
+        @Body() signupDto: ConsumerSignupDto,
         @Res() res
     ) {
         try {
-            this.logger.log(`Signing up consumer ${consumerId}`);
+            this.logger.log(`Signing up consumer ${signupDto.consumerId}`);
 
-            await this.consumerService.createConsumer(consumerId);
+            await this.consumerService.createConsumer(signupDto);
 
             this.logger.log(`Successfully signed up`);
 
@@ -127,7 +128,7 @@ export class ConsumerController {
         try {
             this.logger.log(`Saving course`);
 
-            await this.consumerService.saveOrUnsaveCourse(consumerId, courseInfoDto);
+            await this.consumerService.saveOrUnsaveCourse(consumerId, courseInfoDto.courseId, courseInfoDto);
 
             this.logger.log(`Successfully saved the course`);
 
@@ -147,16 +148,16 @@ export class ConsumerController {
 
     @ApiOperation({ summary: 'Unsave a course' })
     @ApiResponse({ status: HttpStatus.OK })
-    @Patch("/:consumerId/course/unsave")
+    @Patch("/:consumerId/course/:courseId/unsave")
     async unsaveCourse(
         @Param("consumerId", ParseUUIDPipe) consumerId: string,
-        @Body() courseInfoDto: CourseInfoDto,
+        @Param("courseId", ParseIntPipe) courseId: number,
         @Res() res
     ) {
         try {
             this.logger.log(`Removing course from saved courses`);
 
-            await this.consumerService.saveOrUnsaveCourse(consumerId, courseInfoDto);
+            await this.consumerService.saveOrUnsaveCourse(consumerId, courseId);
 
             this.logger.log(`Successfully unsaved the course`);
 

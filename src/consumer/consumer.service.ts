@@ -10,6 +10,7 @@ import { CourseProgressStatus } from '@prisma/client';
 import { CreateRequestDto, RequestDto, RequestStatus, RequestType } from './dto/create-request.dto';
 import axios from 'axios';
 import { PurchaseCourseDto, PurchaseDto } from './dto/purchase.dto';
+import { ConsumerSignupDto } from './dto/signup.dto';
 
 @Injectable()
 export class ConsumerService {
@@ -28,16 +29,15 @@ export class ConsumerService {
         return consumer;
     }
 
-    async createConsumer(consumerId: string) {
+    async createConsumer(signupDto: ConsumerSignupDto) {
         await this.prisma.consumerMetadata.create({
-            data: {
-                consumerId,
-            }
+            data: signupDto
         });
     }
 
     async getAccountDetails(consumerId: string): Promise<ConsumerAccountDto> {
         
+        // Fetch and validate consumer
         const consumer = await this.prisma.consumerMetadata.findUnique({
             where: {
                 consumerId
@@ -66,6 +66,8 @@ export class ConsumerService {
 
         return {
             consumerId,
+            emailId: consumer.email,
+            phoneNumber: consumer.phoneNumber,
             createdAt: consumer.createdAt,
             updatedAt: consumer.updatedAt,
             credits,
@@ -75,6 +77,7 @@ export class ConsumerService {
 
     async viewCoursePurchaseHistory(consumerId: string): Promise<PurchasedCourseDto[]> {
 
+        // 
         return this.prisma.consumerCourseMetadata.findMany({
             where: {
                 consumerId
@@ -85,7 +88,7 @@ export class ConsumerService {
         });
     }
 
-    async saveOrUnsaveCourse(consumerId: string, courseInfoDto: CourseInfoDto) {
+    async saveOrUnsaveCourse(consumerId: string, courseId: number, courseInfoDto?: CourseInfoDto) {
 
         const consumer = await this.getConsumer(consumerId);
 
@@ -93,13 +96,13 @@ export class ConsumerService {
 
         // Add the course to the list of saved courses if it is not present
         // Remove if present
-        const courseIdx = savedCourses.findIndex((c) => c == courseInfoDto.courseId)
+        const courseIdx = savedCourses.findIndex((c) => c == courseId)
 
         if(courseIdx != -1) {
             savedCourses[courseIdx] = savedCourses[savedCourses.length - 1];
             savedCourses.pop();
         } else {
-            savedCourses.push(courseInfoDto.courseId)
+            savedCourses.push(courseId)
         }
         await this.prisma.consumerMetadata.update({
             where: {
@@ -111,7 +114,7 @@ export class ConsumerService {
                 }
             }
         });
-        if(courseIdx != -1)
+        if(courseIdx != -1 || !courseInfoDto)
             return;
 
         //  Create an entry if it does not exist. No action if it is already present. 

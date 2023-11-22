@@ -4,16 +4,16 @@ import { IsNotEmpty, IsString, IsUrl } from "class-validator";
 
 export class CreateNotificationDto {
 
-    //  Notification Text
+    // Notification Text
     @ApiProperty()
     @IsNotEmpty()
     @IsString()
     text: string;
 
-    //  Feedback Text
+    // Notification link
     @ApiProperty()
     @IsNotEmpty()
-    @IsUrl()
+    @IsString()
     link: string;
 }
 

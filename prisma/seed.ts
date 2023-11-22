@@ -9,7 +9,7 @@ const main = async () => {
     const admin = await prisma.admin.create({
         data: {
             name: "Sanchit Uke",
-            email: "sanchituke@gmail.com",
+            email: "sanchit@esmagico.in",
             password: "asdfghjkl"
         }
     });
@@ -17,12 +17,20 @@ const main = async () => {
     const consumers = await prisma.consumerMetadata.createMany({
         data: [{
             consumerId: "123e4567-e89b-42d3-a456-556642440000",
+            email: "abc0@gmail.com",
+            phoneNumber: "9999999990"
         }, {
             consumerId: "123e4567-e89b-42d3-a456-556642440001",
+            email: "abc1@gmail.com",
+            phoneNumber: "9999999991"
         }, {
             consumerId: "123e4567-e89b-42d3-a456-556642440002",
+            email: "abc2@gmail.com",
+            phoneNumber: "9999999992"
         }, {
             consumerId: "123e4567-e89b-42d3-a456-556642440003",
+            email: "abc3@gmail.com",
+            phoneNumber: "9999999993"
         }]
     });
     const courses = await prisma.courseInfo.createMany({

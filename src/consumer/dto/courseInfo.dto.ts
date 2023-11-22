@@ -1,4 +1,4 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { PartialType } from "@nestjs/swagger";
 import { IsNotEmpty, IsString, Min, IsInt, IsArray, IsUrl, IsUUID, ArrayNotEmpty } from "class-validator";
 
 export class CourseInfoDto {
@@ -50,4 +50,8 @@ export class CourseInfoDto {
     @IsNotEmpty()
     @IsString()
     providerName: string;
+}
+
+export class UnsaveCourseDto extends PartialType(CourseInfoDto) {
+
 }
