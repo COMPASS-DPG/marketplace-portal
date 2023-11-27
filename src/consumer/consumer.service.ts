@@ -2,15 +2,16 @@ import { BadRequestException, HttpException, Injectable, NotFoundException } fro
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ConsumerAccountDto } from './dto/account.dto';
 import { PurchasedCourseDto } from './dto/purchasedCourse.dto';
-import { CourseInfoDto } from './dto/courseInfo.dto';
+import { CourseInfoDto, CourseInfoResponseDto } from './dto/courseInfo.dto';
 import { TransactionResponse } from './dto/transaction.dto';
 import { FeedbackDto } from './dto/feedback.dto';
 import { CreateNotificationDto, NotificationResponseDto } from './dto/notification.dto';
-import { CourseProgressStatus } from '@prisma/client';
+import { CourseProgressStatus, NotificationStatus } from '@prisma/client';
 import { CreateRequestDto, RequestDto, RequestStatus, RequestType } from './dto/create-request.dto';
 import axios from 'axios';
 import { PurchaseCourseDto, PurchaseDto } from './dto/purchase.dto';
 import { ConsumerSignupDto } from './dto/signup.dto';
+import { CourseResponse } from './dto/course-response.dto';
 
 @Injectable()
 export class ConsumerService {
@@ -77,7 +78,6 @@ export class ConsumerService {
 
     async viewCoursePurchaseHistory(consumerId: string): Promise<PurchasedCourseDto[]> {
 
-        // 
         return this.prisma.consumerCourseMetadata.findMany({
             where: {
                 consumerId
@@ -162,11 +162,12 @@ export class ConsumerService {
             throw new BadRequestException("User has not completed the course");
 
         // forward to course manager
+        if(!process.env.COURSE_MANAGER_URL)
+            throw new HttpException("Course Manager URL not defined", 500);
+        
         const endpoint = `/api/course/${feedbackDto.courseId}/feedback/${consumerId}`;
 
-        const response = await axios.patch(process.env.COURSE_MANAGER_URL + endpoint);
-        // console.log(response);
- 
+        await axios.patch(process.env.COURSE_MANAGER_URL + endpoint);
 
         // update marketplace metadata model
         await this.prisma.consumerCourseMetadata.update({
@@ -181,23 +182,30 @@ export class ConsumerService {
                 feedback: feedbackDto.feedback
             }
         });
+
+        // forward to passbook to issue credential
+        
     }
 
-    async viewCourse(courseId: number) {
+    async viewCourse(courseId: number): Promise<CourseResponse> {
 
         // forward to BPP
 
         // code to directly forward to course manager
+        if(!process.env.COURSE_MANAGER_URL)
+            throw new HttpException("Course manager URL not defined", 500);
         const endpoint = `/api/course/${courseId}`;
         const response = await axios.get(process.env.COURSE_MANAGER_URL + endpoint);
         return response.data.data;
     }
 
-    async searchCourses(searchInput: string) {
+    async searchCourses(searchInput: string): Promise<CourseResponse[]> {
 
         // forward to BPP
 
         // code to directly forward to course manager
+        if(!process.env.COURSE_MANAGER_URL)
+            throw new HttpException("Course manager URL not defined", 500);
         const endpoint = `/api/course/search`;
         const queryParams = `?searchInput=${searchInput}`
         const response = await axios.get(process.env.COURSE_MANAGER_URL + endpoint + queryParams);
@@ -207,7 +215,7 @@ export class ConsumerService {
 
     async purchaseCourse(consumerId: string, purchaseCourseDto: PurchaseCourseDto) {
 
-        const consumer = await this.getConsumer(consumerId);
+        await this.getConsumer(consumerId);
 
         let consumerCourseData = await this.prisma.consumerCourseMetadata.findUnique({
             where: {
@@ -236,6 +244,22 @@ export class ConsumerService {
 
         await axios.post(process.env.COURSE_MANAGER_URL + endpoint);
 
+        //  Create an entry to add the course info if it does not exist. No action if it is already present. 
+        //  There may be a race condition for inserting courseInfo for the same course.
+        //  In such a case, insertion happens once and no error is thrown
+        try {
+            const {providerId, ...clone} = purchaseCourseDto;
+            await this.prisma.courseInfo.upsert({
+                where: {
+                    courseId: clone.courseId
+                },
+                create: clone,
+                update: {}
+            });
+
+        } catch {}
+
+        // Record transaction in marketplace metadata model
         await this.prisma.consumerCourseMetadata.create({
             data: {
                 consumerId,
@@ -244,21 +268,9 @@ export class ConsumerService {
                 becknTransactionId: 0, 
             }
         });
-        //  Create an entry to add the course info if it does not exist. No action if it is already present. 
-        //  There may be a race condition for inserting courseInfo for the same course.
-        //  In such a case, insertion happens once and no error is thrown
-        try {
-            await this.prisma.courseInfo.upsert({
-                where: {
-                    courseId: purchaseCourseDto.courseId
-                },
-                create: purchaseCourseDto,
-                update: {}
-            });
-        } catch {}
     }
 
-    async getSavedCourses(consumerId: string): Promise<CourseInfoDto[]> {
+    async getSavedCourses(consumerId: string): Promise<CourseInfoResponseDto[]> {
 
         const consumer = await this.getConsumer(consumerId);
 
@@ -286,6 +298,28 @@ export class ConsumerService {
             data: {
                 consumerId,
                 ...createNotificationDto
+            }
+        });
+    }
+
+    async markNotificationViewed(notificationId: number, consumerId: string) {
+
+        const notification = await this.prisma.notification.findUnique({
+            where: {
+                id: notificationId
+            }
+        });
+        if(!notification)
+            throw new NotFoundException("Notification does not exist");
+        if(notification.consumerId != consumerId)
+            throw new BadRequestException("Notification does not belong to this user");
+        
+        await this.prisma.notification.update({
+            where: {
+                id: notificationId
+            },
+            data: {
+                status: NotificationStatus.VIEWED
             }
         });
     }

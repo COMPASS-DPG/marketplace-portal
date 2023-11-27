@@ -58,6 +58,8 @@ model CourseInfo {
   language                String[]
   courseLink              String
   providerName            String
+  avgRating               Float?
+  competency              Json
   ConsumerCourseMetadata  ConsumerCourseMetadata[]
 }
 

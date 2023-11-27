@@ -43,7 +43,13 @@ const main = async () => {
             imageLink: "https://courses.nestjs.com/img/logo.svg",
             providerName: "Udemy",
             language: ["en"],
-            bppId: "xyz"
+            bppId: "xyz",
+            avgRating: 4.5,
+            competency: {
+                "API Development": ["Level1", "Level2"],
+                "Typescript": ["Level1"],
+                "Backend engineering": ["Level1"]
+            }
         }, {
             courseId: 2,
             title: "Graphic Design Masterclass",
@@ -53,7 +59,13 @@ const main = async () => {
             imageLink: "https://www.unite.ai/wp-content/uploads/2023/05/emily-bernal-v9vII5gV8Lw-unsplash.jpg",
             providerName: "Udemy",
             language: ["en"],
-            bppId: "xyz"
+            bppId: "xyz",
+            avgRating: 4.5,
+            competency: {
+                "API Development": ["Level1", "Level2"],
+                "Typescript": ["Level1"],
+                "Backend engineering": ["Level1"]
+            }
         }, {
             courseId: 3,
             title: "Python for Data Science",
@@ -63,7 +75,13 @@ const main = async () => {
             imageLink: "https://blog.imarticus.org/wp-content/uploads/2021/12/learn-Python-for-data-science.jpg",
             providerName: "Coursera",
             language: ["en"],
-            bppId: "xyz"
+            bppId: "xyz",
+            avgRating: 4.5,
+            competency: {
+                "API Development": ["Level1", "Level2"],
+                "Typescript": ["Level1"],
+                "Backend engineering": ["Level1"]
+            }
         }]
     })
     const purchasedCourses = await prisma.consumerCourseMetadata.createMany({

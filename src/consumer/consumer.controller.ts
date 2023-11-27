@@ -3,7 +3,7 @@ import { ConsumerService } from "./consumer.service";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ConsumerAccountDto, CreditsDto } from "./dto/account.dto";
 import { PurchasedCourseDto } from "./dto/purchasedCourse.dto";
-import { CourseInfoDto, UnsaveCourseDto } from "./dto/courseInfo.dto";
+import { CourseInfoDto } from "./dto/courseInfo.dto";
 import { TransactionResponse } from "./dto/transaction.dto";
 import { FeedbackDto } from "./dto/feedback.dto";
 import { CreateNotificationDto, NotificationResponseDto } from "./dto/notification.dto";
@@ -11,6 +11,7 @@ import { RequestDto } from "./dto/create-request.dto";
 import { PurchaseCourseDto } from "./dto/purchase.dto";
 import { getPrismaErrorStatusAndMessage } from "src/utils/utils";
 import { ConsumerSignupDto } from "./dto/signup.dto";
+import { CourseResponse } from "./dto/course-response.dto";
 
 
 @Controller('consumer')
@@ -271,7 +272,7 @@ export class ConsumerController {
 
     // Search for courses
     @ApiOperation({ summary: 'Search for courses' })
-    @ApiResponse({ status: HttpStatus.OK })
+    @ApiResponse({ status: HttpStatus.OK, type: [CourseResponse] })
     @Get("/course/search")
     async searchCourses(
         @Query('searchInput') searchInput: string,
@@ -303,7 +304,7 @@ export class ConsumerController {
 
     // Select/View course information
     @ApiOperation({ summary: 'View course information' })
-    @ApiResponse({ status: HttpStatus.OK })
+    @ApiResponse({ status: HttpStatus.OK, type: CourseResponse })
     @Get("/course/:courseId")
     async viewCourse(
         @Param("courseId", ParseIntPipe) courseId: number,
@@ -427,7 +428,7 @@ export class ConsumerController {
         }
     }
 
-    // View notifications
+    // Generate notifications
     @ApiOperation({ summary: 'Generate notification' })
     @ApiResponse({ status: HttpStatus.CREATED })
     @Post("/:consumerId/notifications")
@@ -453,6 +454,36 @@ export class ConsumerController {
             res.status(statusCode).json({
                 statusCode, 
                 message: errorMessage || "Failed to generate notification",
+            });
+        }
+    }
+
+    // Mark Notification as viewed
+    @ApiOperation({ summary: 'Mark Notification as viewed' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @Patch("/:consumerId/notifications/:notificationId")
+    async markNotificationViewed(
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
+        @Param("notificationId", ParseIntPipe) notificationId: number,
+        @Res() res
+    ) {
+        try {
+            this.logger.log(`Marking notification as viewed`);
+
+            await this.consumerService.markNotificationViewed(notificationId, consumerId);
+
+            this.logger.log(`Successfully marked notification as viewed`);
+
+            res.status(HttpStatus.OK).json({
+                message: "Notification viewed successfully",
+            })
+        } catch (err) {
+            this.logger.error(`Failed to mark notification as viewed`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to mark notification as viewed",
             });
         }
     }
