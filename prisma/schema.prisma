@@ -76,5 +76,6 @@ model Notification {
   text                String
   link                String
   status              NotificationStatus  @default(NOT_VIEWED)
+  createdAt           DateTime            @default(now())
   ConsumerMetadata    ConsumerMetadata    @relation(fields: [consumerId], references: [consumerId])
 }

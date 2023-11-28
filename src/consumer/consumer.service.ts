@@ -117,7 +117,7 @@ export class ConsumerService {
         if(courseIdx != -1 || !courseInfoDto)
             return;
 
-        //  Create an entry if it does not exist. No action if it is already present. 
+        //  Create an entry if it does not exist and update it if it does.
         //  There may be a race condition for inserting courseInfo for the same course.
         //  In such a case, insertion happens once and no error is thrown
         try {
@@ -125,10 +125,8 @@ export class ConsumerService {
                 where: {
                     courseId: courseInfoDto.courseId
                 },
-                create: {
-                    ...courseInfoDto
-                },
-                update: {}
+                create: courseInfoDto,
+                update: courseInfoDto
             });
         } catch {}
     }
@@ -232,19 +230,18 @@ export class ConsumerService {
         let endpoint = `/api/consumers/${consumerId}/purchase`;
         const purchaseBody: PurchaseDto = {
             providerId: purchaseCourseDto.providerId,
-            credits: purchaseCourseDto.credits
+            credits: purchaseCourseDto.credits,
+            description: `Purchased course ${purchaseCourseDto.title}`
         }
         const walletResponse = await axios.post(process.env.WALLET_SERVICE_URL + endpoint, purchaseBody);
-        // console.log(walletResponse.data.data);
         let walletTransactionId = walletResponse.data.data.transaction.transactionId;
-
 
         // forward to course manager for purchase
         endpoint = `/api/course/${purchaseCourseDto.courseId}/purchase/${consumerId}`;
 
         await axios.post(process.env.COURSE_MANAGER_URL + endpoint);
 
-        //  Create an entry to add the course info if it does not exist. No action if it is already present. 
+        //  Create an entry to add the course info if it does not exist and update it if it does. 
         //  There may be a race condition for inserting courseInfo for the same course.
         //  In such a case, insertion happens once and no error is thrown
         try {
@@ -254,9 +251,8 @@ export class ConsumerService {
                     courseId: clone.courseId
                 },
                 create: clone,
-                update: {}
+                update: clone
             });
-
         } catch {}
 
         // Record transaction in marketplace metadata model

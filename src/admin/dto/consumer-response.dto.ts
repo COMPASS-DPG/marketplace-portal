@@ -3,3 +3,11 @@ export class ConsumerDtoResponse {
   readonly consumerId: string;
   readonly savedCourses: number[];
 }
+
+export class AdminConsumerDtoResponse {
+  readonly consumerId: string;
+  readonly name?: string;
+  readonly role?: string;
+  readonly numCoursesPurchased: number;
+  readonly credits: number;
+}

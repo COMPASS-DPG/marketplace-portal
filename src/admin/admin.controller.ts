@@ -2,7 +2,7 @@ import { Body, Controller, Get, HttpStatus, NotFoundException, Param, Patch, Pos
 import { AdminService } from './admin.service';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { LoginDto, LoginResponseDto } from './dto/login.dto';
-import { ConsumerDtoResponse } from './dto/consumer-response.dto';
+import { AdminConsumerDtoResponse, ConsumerDtoResponse } from './dto/consumer-response.dto';
 import { EditConsumerDto } from './dto/edit-consumer.dto';
 import { CreditRequestDto } from './dto/credit-request.dto';
 import { ConsumerWalletResponseDto } from './dto/consumer-wallet.dto';
@@ -52,23 +52,20 @@ export class AdminController {
     }
 
     @ApiOperation({ summary: 'View all consumers on marketplace' })
-    @ApiResponse({ status: HttpStatus.OK, type: ConsumerDtoResponse, isArray: true })
+    @ApiResponse({ status: HttpStatus.OK, type: [AdminConsumerDtoResponse], isArray: true })
     @Get("/:adminId/consumers")
     // View all consumers on marketplace
     async getAllConsumers(
         @Param("adminId", ParseUUIDPipe) adminId: string,
         @Res() res
     ) {
-        
         // validate the adminId
-
         try {
-
             this.logger.log(`Fetching all consumers`);
 
             await this.adminService.validateAdmin(adminId);
 
-            const consumers = await this.adminService.getAllConsumers();
+            const consumers = await this.adminService.getAllConsumers(adminId);
 
             this.logger.log(`Fetched all consumers successfully`);
 
@@ -98,9 +95,7 @@ export class AdminController {
         @Param("consumerId", ParseUUIDPipe) consumerId: string,
         @Res() res
     ) {
-        
         try {
-
             // validate the adminId
             this.logger.log(`Fetching consumer information with consumerId: ${consumerId}`);
             await this.adminService.validateAdmin(adminId);
@@ -111,7 +106,7 @@ export class AdminController {
             const consumer = await this.adminService.getConsumer(consumerId);
 
             if(!consumer) {
-                throw new NotFoundException("Consumer not foudn with the given id");
+                throw new NotFoundException("Consumer not found with the given id");
             }
             this.logger.log(`consumerId validation successful`);
             this.logger.log(`Fetched consumer information successfully`);

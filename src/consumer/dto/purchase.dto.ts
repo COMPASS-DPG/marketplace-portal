@@ -17,4 +17,8 @@ export class PurchaseDto {
 
     // Number of credits transferred
     readonly credits: number;
+
+    // Purchase description
+    readonly description: string;
+
 }
