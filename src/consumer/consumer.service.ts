@@ -226,20 +226,17 @@ export class ConsumerService {
         if(consumerCourseData)
             throw new BadRequestException("Course Already purchased");
 
-        // forward to wallet service for transaction
-        let endpoint = `/api/consumers/${consumerId}/purchase`;
-        const purchaseBody: PurchaseDto = {
+        // forward to course manager for purchase
+        // wallet transaction handled in course manager
+        const endpoint = `/api/course/${purchaseCourseDto.courseId}/purchase`;
+        const purchaseDto: PurchaseDto = {
+            consumerId,
             providerId: purchaseCourseDto.providerId,
             credits: purchaseCourseDto.credits,
-            description: `Purchased course ${purchaseCourseDto.title}`
+            transactionDescription: `Purchased course ${purchaseCourseDto.title}`
         }
-        const walletResponse = await axios.post(process.env.WALLET_SERVICE_URL + endpoint, purchaseBody);
-        let walletTransactionId = walletResponse.data.data.transaction.transactionId;
 
-        // forward to course manager for purchase
-        endpoint = `/api/course/${purchaseCourseDto.courseId}/purchase/${consumerId}`;
-
-        await axios.post(process.env.COURSE_MANAGER_URL + endpoint);
+        const response = await axios.post(process.env.COURSE_MANAGER_URL + endpoint, purchaseDto);
 
         //  Create an entry to add the course info if it does not exist and update it if it does. 
         //  There may be a race condition for inserting courseInfo for the same course.
@@ -260,7 +257,7 @@ export class ConsumerService {
             data: {
                 consumerId,
                 courseId: purchaseCourseDto.courseId,
-                walletTransactionId,
+                walletTransactionId: response.data.data.walletTransactionId,
                 becknTransactionId: 0, 
             }
         });

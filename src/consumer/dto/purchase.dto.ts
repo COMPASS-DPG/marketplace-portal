@@ -12,6 +12,9 @@ export class PurchaseCourseDto extends CourseInfoDto {
 
 export class PurchaseDto {
 
+    // Consumer ID
+    readonly consumerId: string;
+
     // provider ID
     readonly providerId: string;
 
@@ -19,6 +22,6 @@ export class PurchaseDto {
     readonly credits: number;
 
     // Purchase description
-    readonly description: string;
+    readonly transactionDescription: string;
 
 }
