@@ -88,6 +88,19 @@ export class ConsumerService {
         });
     }
 
+    async fetchOngoingCourses(consumerId: string): Promise<PurchasedCourseDto[]> {
+
+        return this.prisma.consumerCourseMetadata.findMany({
+            where: {
+                consumerId,
+                status: CourseProgressStatus.IN_PROGRESS
+            },
+            include: {
+                CourseInfo: true
+            }
+        });
+    }
+
     async saveOrUnsaveCourse(consumerId: string, courseId: number, courseInfoDto?: CourseInfoDto) {
 
         const consumer = await this.getConsumer(consumerId);

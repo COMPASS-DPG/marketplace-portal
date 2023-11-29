@@ -116,8 +116,39 @@ export class ConsumerController {
         }
     }
 
+    // View ongoing courses
+    @ApiOperation({ summary: 'View ongoing courses' })
+    @ApiResponse({ status: HttpStatus.OK, type: [PurchasedCourseDto] })
+    @Get("/:consumerId/course/ongoing")
+    async fetchOngoingCourses(
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
+        @Res() res
+    ) {
+        try {
+            this.logger.log(`Getting consumer ongoing courses`);
+
+            const consumerCourses = await this.consumerService.fetchOngoingCourses(consumerId);
+
+            this.logger.log(`Successfully fetched consumer ongoing courses`);
+
+            res.status(HttpStatus.OK).json({
+                message: "fetch successful",
+                data: {
+                    consumerCourses
+                }
+            })
+        } catch (err) {
+            this.logger.error(`Failed to retreive consumer's ongoing courses`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to retreive consumer's ongoing courses",
+            });
+        }
+    }
+
     // Save a course for later reference
-    // This API will also be used to unsave a course if it was previously saved
     @ApiOperation({ summary: 'Save a course' })
     @ApiResponse({ status: HttpStatus.OK })
     @Post("/:consumerId/course/save")
