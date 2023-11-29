@@ -192,11 +192,20 @@ export class ConsumerService {
         return response.data.data;
     }
 
+    async getPollResults(messageId: string) {
+        const url = process.env.BAP_URL;
+        const endpoint = `/on_search/poll/${messageId}`;
+        const searchResults = await axios.get(url + endpoint);
+        return searchResults;
+    }
+
     async searchCourses(searchInput: string) {
 
         // forward to BAP(`/search)
+    
 
         // code to directly forward to course manager
+        // should be in BAP. not here
         const endpoint = `/api/course/search`;
         const queryParams = `?searchInput=${searchInput}`
         const response = await axios.get(process.env.COURSE_MANAGER_URL + endpoint + queryParams);
