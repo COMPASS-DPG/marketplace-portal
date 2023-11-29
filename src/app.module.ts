@@ -5,7 +5,7 @@ import { AppService } from "./app.service";
 import { PrismaModule } from "./prisma/prisma.module";
 import { ConsumerModule } from "./consumer/consumer.module";
 import { AdminModule } from './admin/admin.module';
-import { RedisStoreModule } from './redis-store/redis-store.module';
+// import { RedisStoreModule } from './redis-store/redis-store.module';
 
 @Module({
   imports: [
@@ -15,7 +15,7 @@ import { RedisStoreModule } from './redis-store/redis-store.module';
     PrismaModule,
     ConsumerModule,
     AdminModule,
-    RedisStoreModule,
+    // RedisStoreModule,
   ],
   controllers: [AppController],
   providers: [AppService],
