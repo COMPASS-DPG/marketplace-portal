@@ -42,6 +42,8 @@ model ConsumerCourseMetadata {
   becknTransactionId  Int
   rating              Int?
   feedback            String?
+  purchasedAt         DateTime              @default(now())
+  completedAt         DateTime?              
   CourseInfo          CourseInfo            @relation(fields: [courseId], references: [courseId])
   ConsumerMetadata    ConsumerMetadata      @relation(fields: [consumerId], references: [consumerId])
 

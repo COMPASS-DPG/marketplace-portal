@@ -12,4 +12,5 @@ export class PurchasedCourseDto {
     readonly rating: number | null;
     readonly feedback: string | null;
     readonly CourseInfo: CourseInfoResponseDto;
+    readonly purchasedAt: Date;
 }

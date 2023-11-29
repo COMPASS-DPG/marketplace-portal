@@ -329,7 +329,8 @@ export class ConsumerService {
                     }
                 },
                 data: {
-                    status: CourseProgressStatus.COMPLETED
+                    status: CourseProgressStatus.COMPLETED,
+                    completedAt: new Date()
                 }
             });
         } catch {
