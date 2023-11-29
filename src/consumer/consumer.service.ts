@@ -166,7 +166,8 @@ export class ConsumerService {
 
         const response = await axios.patch(process.env.COURSE_MANAGER_URL + endpoint);
         // console.log(response);
- 
+        
+        // `/rating` to BAP
 
         // update marketplace metadata model
         await this.prisma.consumerCourseMetadata.update({
@@ -185,8 +186,6 @@ export class ConsumerService {
 
     async viewCourse(courseId: number) {
 
-        // forward to BPP
-
         // code to directly forward to course manager
         const endpoint = `/api/course/${courseId}`;
         const response = await axios.get(process.env.COURSE_MANAGER_URL + endpoint);
@@ -195,7 +194,7 @@ export class ConsumerService {
 
     async searchCourses(searchInput: string) {
 
-        // forward to BPP
+        // forward to BAP(`/search)
 
         // code to directly forward to course manager
         const endpoint = `/api/course/search`;
@@ -256,6 +255,8 @@ export class ConsumerService {
                 update: {}
             });
         } catch {}
+
+        // `/confirm` to BAP
     }
 
     async getSavedCourses(consumerId: string): Promise<CourseInfoDto[]> {
@@ -294,6 +295,8 @@ export class ConsumerService {
 
         await this.getConsumer(consumerId);
         try {
+            //`/update on BAP`
+
             await this.prisma.consumerCourseMetadata.update({
                 where: {
                     consumerId_courseId: {
