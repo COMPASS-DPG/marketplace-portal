@@ -301,6 +301,37 @@ export class ConsumerController {
         }
     }
 
+    @ApiOperation({ summary: 'Poll for new search responses' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @Get("/course/search/poll/:messageId")
+    async pollResponses(
+        @Param('messageId') messageId: string,
+        @Res() res
+    ) {
+        try {
+            this.logger.log(`Polling for new search responses`);
+
+            const courses = await this.consumerService.getPollResults(messageId);
+
+            this.logger.log(`Successfully fetched the courses`);
+            
+            res.status(HttpStatus.OK).json({
+                message: "fetch successful",
+                data: {
+                    courses
+                }
+            });
+        } catch (err) {
+            this.logger.error(`Poll failed`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Poll failed",
+            });
+        }
+    }
+
     // Select/View course information
     @ApiOperation({ summary: 'View course information' })
     @ApiResponse({ status: HttpStatus.OK })
