@@ -9,7 +9,7 @@ import { CreateNotificationDto, NotificationResponseDto } from './dto/notificati
 import { CourseProgressStatus, NotificationStatus } from '@prisma/client';
 import { CreateRequestDto, RequestDto, RequestStatus, RequestType } from './dto/create-request.dto';
 import axios from 'axios';
-import { PurchaseCourseDto, PurchaseDto } from './dto/purchase.dto';
+import { PurchaseDto } from './dto/purchase.dto';
 import { ConsumerSignupDto } from './dto/signup.dto';
 import { CourseResponse } from './dto/course-response.dto';
 
@@ -101,35 +101,22 @@ export class ConsumerService {
         });
     }
 
-    async saveOrUnsaveCourse(consumerId: string, courseId: number, courseInfoDto?: CourseInfoDto) {
+    async saveCourse(consumerId: string, courseId: number, courseInfoDto: CourseInfoDto) {
 
         const consumer = await this.getConsumer(consumerId);
 
-        let savedCourses = consumer.savedCourses;
-
-        // Add the course to the list of saved courses if it is not present
-        // Remove if present
-        const courseIdx = savedCourses.findIndex((c) => c == courseId)
-
-        if(courseIdx != -1) {
-            savedCourses[courseIdx] = savedCourses[savedCourses.length - 1];
-            savedCourses.pop();
-        } else {
-            savedCourses.push(courseId)
-        }
+        if(consumer.savedCourses.find((c) => c == courseId))
+            throw new BadRequestException("Course already saved");
         await this.prisma.consumerMetadata.update({
             where: {
-                consumerId
+                consumerId,
             },
             data: {
                 savedCourses: {
-                    set: savedCourses
+                    push: courseId
                 }
             }
         });
-        if(courseIdx != -1 || !courseInfoDto)
-            return;
-
         //  Create an entry if it does not exist and update it if it does.
         //  There may be a race condition for inserting courseInfo for the same course.
         //  In such a case, insertion happens once and no error is thrown
@@ -142,6 +129,33 @@ export class ConsumerService {
                 update: courseInfoDto
             });
         } catch {}
+    }
+
+    async unsaveCourse(consumerId: string, courseId: number) {
+
+        const consumer = await this.getConsumer(consumerId);
+
+        if(!consumer.savedCourses.find((c) => c == courseId))
+            throw new BadRequestException("Course not saved");
+
+        await this.prisma.consumerMetadata.update({
+            where: {
+                consumerId,
+            },
+            data: {
+                savedCourses: consumer.savedCourses.filter((c) => c != courseId)
+            }
+        });
+    }
+
+    async checkSaveStatus(consumerId: string, courseId: number) {
+
+        const consumer = await this.getConsumer(consumerId);
+
+        if(consumer.savedCourses.find((c) => c == courseId))
+            return true;
+
+        return false;
     }
 
     async viewTransactionHistory(consumerId: string): Promise<TransactionResponse[]> {
@@ -172,13 +186,62 @@ export class ConsumerService {
         if(consumerCourseData.status != CourseProgressStatus.COMPLETED)
             throw new BadRequestException("User has not completed the course");
 
+        // forward to Credential MS to issue certificate
+        // if(!process.env.CREDENTIAL_SERVICE_URL)
+        //     throw new HttpException("Credential Service URL not defined", 500);
+        
+        // let endpoint = `/credentials/issue`;
+        
+        // const requestDto = JSON.parse(`{
+        //     "credential": {
+        //         "@context": [
+        //             "https://www.w3.org/2018/credentials/v1",
+        //             "https://www.w3.org/2018/credentials/examples/v1"
+        //         ],
+        //         "type": [
+        //             "VerifiableCredential",
+        //             "UniversityDegreeCredential"
+        //         ],
+        //         "issuer": "did:rcw:6b9d7b31-bc7f-454a-be30-b6c7447b1cff",
+        //         "issuanceDate": "2023-02-06T11:56:27.259Z",
+        //         "expirationDate": "2023-02-08T11:56:27.259Z",
+        //         "credentialSubject": {
+        //             "id": "did:rcw:6b9d7b31-bc7f-454a-be30-b6c7447b1cff",
+        //             "grade": "9.23",
+        //             "programme": "B.Tech",
+        //             "certifyingInstitute": "IIIT Sonepat",
+        //             "evaluatingInstitute": "NIT Kurukshetra"
+        //         },
+        //         "options": {
+        //             "created": "2020-04-02T18:48:36Z",
+        //             "credentialStatus": {
+        //                 "type": "RevocationList2020Status"
+        //             }
+        //         }
+        //     },
+        //     "credentialSchemaId": "did:schema:b22f7835-0255-412b-8663-d1131c48aa66",
+        //     "credentialSchemaVersion": "3.0.0",
+        //     "tags": ["tag1", "tag2", "tag3"],
+        //     "method": "cbse"
+        // }`)
+
+        // const response = await axios.post(process.env.CREDENTIAL_SERVICE_URL + endpoint, requestDto);
+
+        // const credentialId = response.data.data.credential.id;
+
+        // forward to passbook to save certificate
+
+
         // forward to course manager
         if(!process.env.COURSE_MANAGER_URL)
             throw new HttpException("Course Manager URL not defined", 500);
         
         const endpoint = `/api/course/${feedbackDto.courseId}/feedback/${consumerId}`;
+        const feedbackBody = {
+            rating: feedbackDto.rating
+        }
 
-        await axios.patch(process.env.COURSE_MANAGER_URL + endpoint);
+        await axios.patch(process.env.COURSE_MANAGER_URL + endpoint, feedbackBody);
 
         // update marketplace metadata model
         await this.prisma.consumerCourseMetadata.update({
@@ -193,9 +256,6 @@ export class ConsumerService {
                 feedback: feedbackDto.feedback
             }
         });
-
-        // forward to passbook to issue credential
-        
     }
 
     async viewCourse(courseId: number): Promise<CourseResponse> {
@@ -224,7 +284,7 @@ export class ConsumerService {
         return response.data.data;
     }
 
-    async purchaseCourse(consumerId: string, purchaseCourseDto: PurchaseCourseDto) {
+    async purchaseCourse(consumerId: string, courseInfoDto: CourseInfoDto) {
 
         await this.getConsumer(consumerId);
 
@@ -232,36 +292,40 @@ export class ConsumerService {
             where: {
                 consumerId_courseId: {
                     consumerId,
-                    courseId: purchaseCourseDto.courseId
+                    courseId: courseInfoDto.courseId
                 }
             }
         });
         if(consumerCourseData)
             throw new BadRequestException("Course Already purchased");
 
+        // forward to bpp
+
+
         // forward to course manager for purchase
         // wallet transaction handled in course manager
-        const endpoint = `/api/course/${purchaseCourseDto.courseId}/purchase`;
+        if(!process.env.COURSE_MANAGER_URL)
+            throw new HttpException("Course manager URL not defined", 500);
+        const endpoint = `/api/course/${courseInfoDto.courseId}/purchase`;
         const purchaseDto: PurchaseDto = {
             consumerId,
-            providerId: purchaseCourseDto.providerId,
-            credits: purchaseCourseDto.credits,
-            transactionDescription: `Purchased course ${purchaseCourseDto.title}`
+            transactionDescription: `Purchased course ${courseInfoDto.title}`
         }
 
         const response = await axios.post(process.env.COURSE_MANAGER_URL + endpoint, purchaseDto);
+        
+        // Rest of the updates can be done in on_confirm
 
         //  Create an entry to add the course info if it does not exist and update it if it does. 
         //  There may be a race condition for inserting courseInfo for the same course.
         //  In such a case, insertion happens once and no error is thrown
         try {
-            const {providerId, ...clone} = purchaseCourseDto;
             await this.prisma.courseInfo.upsert({
                 where: {
-                    courseId: clone.courseId
+                    courseId: courseInfoDto.courseId
                 },
-                create: clone,
-                update: clone
+                create: courseInfoDto,
+                update: courseInfoDto
             });
         } catch {}
 
@@ -269,7 +333,7 @@ export class ConsumerService {
         await this.prisma.consumerCourseMetadata.create({
             data: {
                 consumerId,
-                courseId: purchaseCourseDto.courseId,
+                courseId: courseInfoDto.courseId,
                 walletTransactionId: response.data.data.walletTransactionId,
                 becknTransactionId: 0, 
             }

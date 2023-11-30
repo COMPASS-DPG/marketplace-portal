@@ -3,12 +3,11 @@ import { ConsumerService } from "./consumer.service";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ConsumerAccountDto, CreditsDto } from "./dto/account.dto";
 import { PurchasedCourseDto } from "./dto/purchasedCourse.dto";
-import { CourseInfoDto } from "./dto/courseInfo.dto";
+import { CourseInfoDto, CourseSaveStatusDto } from "./dto/courseInfo.dto";
 import { TransactionResponse } from "./dto/transaction.dto";
 import { FeedbackDto } from "./dto/feedback.dto";
 import { CreateNotificationDto, NotificationResponseDto } from "./dto/notification.dto";
 import { RequestDto } from "./dto/create-request.dto";
-import { PurchaseCourseDto } from "./dto/purchase.dto";
 import { getPrismaErrorStatusAndMessage } from "src/utils/utils";
 import { ConsumerSignupDto } from "./dto/signup.dto";
 import { CourseResponse } from "./dto/course-response.dto";
@@ -160,7 +159,7 @@ export class ConsumerController {
         try {
             this.logger.log(`Saving course`);
 
-            await this.consumerService.saveOrUnsaveCourse(consumerId, courseInfoDto.courseId, courseInfoDto);
+            await this.consumerService.saveCourse(consumerId, courseInfoDto.courseId, courseInfoDto);
 
             this.logger.log(`Successfully saved the course`);
 
@@ -189,7 +188,7 @@ export class ConsumerController {
         try {
             this.logger.log(`Removing course from saved courses`);
 
-            await this.consumerService.saveOrUnsaveCourse(consumerId, courseId);
+            await this.consumerService.unsaveCourse(consumerId, courseId);
 
             this.logger.log(`Successfully unsaved the course`);
 
@@ -203,6 +202,36 @@ export class ConsumerController {
             res.status(statusCode).json({
                 statusCode, 
                 message: errorMessage || "Failed to unsave course",
+            });
+        }
+    }
+
+    @ApiOperation({ summary: 'check if course is saved' })
+    @ApiResponse({ status: HttpStatus.OK, type: CourseSaveStatusDto })
+    @Get("/:consumerId/course/:courseId/save")
+    async checkSaveStatus(
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
+        @Param("courseId", ParseIntPipe) courseId: number,
+        @Res() res
+    ) {
+        try {
+            this.logger.log(`Checking course from saved courses`);
+
+            const saved = await this.consumerService.checkSaveStatus(consumerId, courseId);
+
+            this.logger.log(`Successfully checked the course`);
+
+            res.status(HttpStatus.OK).json({
+                message: "course checked successfully",
+                saved
+            });
+        } catch (err) {
+            this.logger.error(`Failed to check course`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to check course",
             });
         }
     }
@@ -371,13 +400,13 @@ export class ConsumerController {
     @Post("/:consumerId/course/purchase")
     async purchaseCourse(
         @Param("consumerId", ParseUUIDPipe) consumerId: string,
-        @Body() purchaseCourseDto: PurchaseCourseDto,
+        @Body() courseInfoDto: CourseInfoDto,
         @Res() res
     ) {
         try {
             this.logger.log(`Purchasing course`);
 
-            await this.consumerService.purchaseCourse(consumerId, purchaseCourseDto);
+            await this.consumerService.purchaseCourse(consumerId, courseInfoDto);
 
             this.logger.log(`Purchase successful`);
             

@@ -77,3 +77,7 @@ export class CourseInfoResponseDto {
     readonly avgRating: number | null;
     readonly competency: JsonValue;
 }
+
+export class CourseSaveStatusDto {
+    readonly saved: boolean
+}
