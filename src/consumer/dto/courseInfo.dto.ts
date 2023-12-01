@@ -1,5 +1,6 @@
-import { PartialType } from "@nestjs/swagger";
-import { IsNotEmpty, IsString, Min, IsInt, IsArray, IsUrl, IsUUID, ArrayNotEmpty } from "class-validator";
+import { JsonValue } from "@prisma/client/runtime/library";
+import { IsNotEmpty, IsString, Min, IsInt, IsArray, IsUrl, ArrayNotEmpty, IsNumber, IsOptional, IsObject } from "class-validator";
+import { CompetencyMap } from "src/utils/types";
 
 export class CourseInfoDto {
 
@@ -9,10 +10,10 @@ export class CourseInfoDto {
     @Min(0)
     courseId: number;
     
-    // course BPP ID
-    @IsNotEmpty()
+    // course BPP URL
+    @IsOptional()
     @IsString()
-    bppId: string;
+    bppUrl?: string;
     
     // course title
     @IsNotEmpty()
@@ -50,8 +51,39 @@ export class CourseInfoDto {
     @IsNotEmpty()
     @IsString()
     providerName: string;
+
+    // name of course author
+    @IsNotEmpty()
+    @IsString()
+    author: string;
+
+    // average rating of the course
+    @IsOptional()
+    @IsNumber()
+    avgRating?: number;
+
+    // Map of course competencies and tags of their respective levels
+    @IsNotEmpty()
+    @IsObject()
+    competency: CompetencyMap;
 }
 
-export class UnsaveCourseDto extends PartialType(CourseInfoDto) {
+export class CourseInfoResponseDto { 
 
+    readonly courseId: number;
+    readonly bppUrl: string | null;
+    readonly title: string;
+    readonly description: string;
+    readonly credits: number;
+    readonly imageLink: string;
+    readonly language: string[];
+    readonly courseLink: string;
+    readonly providerName: string;
+    readonly author: string;
+    readonly avgRating: number | null;
+    readonly competency: JsonValue;
+}
+
+export class CourseSaveStatusDto {
+    readonly saved: boolean
 }

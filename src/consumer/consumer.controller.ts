@@ -3,14 +3,14 @@ import { ConsumerService } from "./consumer.service";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ConsumerAccountDto, CreditsDto } from "./dto/account.dto";
 import { PurchasedCourseDto } from "./dto/purchasedCourse.dto";
-import { CourseInfoDto, UnsaveCourseDto } from "./dto/courseInfo.dto";
+import { CourseInfoDto, CourseSaveStatusDto } from "./dto/courseInfo.dto";
 import { TransactionResponse } from "./dto/transaction.dto";
 import { FeedbackDto } from "./dto/feedback.dto";
 import { CreateNotificationDto, NotificationResponseDto } from "./dto/notification.dto";
 import { RequestDto } from "./dto/create-request.dto";
-import { PurchaseCourseDto } from "./dto/purchase.dto";
 import { getPrismaErrorStatusAndMessage } from "src/utils/utils";
 import { ConsumerSignupDto } from "./dto/signup.dto";
+import { CourseResponse } from "./dto/course-response.dto";
 
 
 @Controller('consumer')
@@ -115,8 +115,39 @@ export class ConsumerController {
         }
     }
 
+    // View ongoing courses
+    @ApiOperation({ summary: 'View ongoing courses' })
+    @ApiResponse({ status: HttpStatus.OK, type: [PurchasedCourseDto] })
+    @Get("/:consumerId/course/ongoing")
+    async fetchOngoingCourses(
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
+        @Res() res
+    ) {
+        try {
+            this.logger.log(`Getting consumer ongoing courses`);
+
+            const consumerCourses = await this.consumerService.fetchOngoingCourses(consumerId);
+
+            this.logger.log(`Successfully fetched consumer ongoing courses`);
+
+            res.status(HttpStatus.OK).json({
+                message: "fetch successful",
+                data: {
+                    consumerCourses
+                }
+            })
+        } catch (err) {
+            this.logger.error(`Failed to retreive consumer's ongoing courses`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to retreive consumer's ongoing courses",
+            });
+        }
+    }
+
     // Save a course for later reference
-    // This API will also be used to unsave a course if it was previously saved
     @ApiOperation({ summary: 'Save a course' })
     @ApiResponse({ status: HttpStatus.OK })
     @Post("/:consumerId/course/save")
@@ -128,7 +159,7 @@ export class ConsumerController {
         try {
             this.logger.log(`Saving course`);
 
-            await this.consumerService.saveOrUnsaveCourse(consumerId, courseInfoDto.courseId, courseInfoDto);
+            await this.consumerService.saveCourse(consumerId, courseInfoDto.courseId, courseInfoDto);
 
             this.logger.log(`Successfully saved the course`);
 
@@ -157,7 +188,7 @@ export class ConsumerController {
         try {
             this.logger.log(`Removing course from saved courses`);
 
-            await this.consumerService.saveOrUnsaveCourse(consumerId, courseId);
+            await this.consumerService.unsaveCourse(consumerId, courseId);
 
             this.logger.log(`Successfully unsaved the course`);
 
@@ -171,6 +202,36 @@ export class ConsumerController {
             res.status(statusCode).json({
                 statusCode, 
                 message: errorMessage || "Failed to unsave course",
+            });
+        }
+    }
+
+    @ApiOperation({ summary: 'check if course is saved' })
+    @ApiResponse({ status: HttpStatus.OK, type: CourseSaveStatusDto })
+    @Get("/:consumerId/course/:courseId/save")
+    async checkSaveStatus(
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
+        @Param("courseId", ParseIntPipe) courseId: number,
+        @Res() res
+    ) {
+        try {
+            this.logger.log(`Checking course from saved courses`);
+
+            const saved = await this.consumerService.checkSaveStatus(consumerId, courseId);
+
+            this.logger.log(`Successfully checked the course`);
+
+            res.status(HttpStatus.OK).json({
+                message: "course checked successfully",
+                saved
+            });
+        } catch (err) {
+            this.logger.error(`Failed to check course`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to check course",
             });
         }
     }
@@ -271,7 +332,7 @@ export class ConsumerController {
 
     // Search for courses
     @ApiOperation({ summary: 'Search for courses' })
-    @ApiResponse({ status: HttpStatus.OK })
+    @ApiResponse({ status: HttpStatus.OK, type: [CourseResponse] })
     @Get("/course/search")
     async searchCourses(
         @Query('searchInput') searchInput: string,
@@ -334,7 +395,7 @@ export class ConsumerController {
 
     // Select/View course information
     @ApiOperation({ summary: 'View course information' })
-    @ApiResponse({ status: HttpStatus.OK })
+    @ApiResponse({ status: HttpStatus.OK, type: CourseResponse })
     @Get("/course/:courseId")
     async viewCourse(
         @Param("courseId", ParseIntPipe) courseId: number,
@@ -370,13 +431,13 @@ export class ConsumerController {
     @Post("/:consumerId/course/purchase")
     async purchaseCourse(
         @Param("consumerId", ParseUUIDPipe) consumerId: string,
-        @Body() purchaseCourseDto: PurchaseCourseDto,
+        @Body() courseInfoDto: CourseInfoDto,
         @Res() res
     ) {
         try {
             this.logger.log(`Purchasing course`);
 
-            await this.consumerService.purchaseCourse(consumerId, purchaseCourseDto);
+            await this.consumerService.purchaseCourse(consumerId, courseInfoDto);
 
             this.logger.log(`Purchase successful`);
             
@@ -458,7 +519,7 @@ export class ConsumerController {
         }
     }
 
-    // View notifications
+    // Generate notifications
     @ApiOperation({ summary: 'Generate notification' })
     @ApiResponse({ status: HttpStatus.CREATED })
     @Post("/:consumerId/notifications")
@@ -484,6 +545,36 @@ export class ConsumerController {
             res.status(statusCode).json({
                 statusCode, 
                 message: errorMessage || "Failed to generate notification",
+            });
+        }
+    }
+
+    // Mark Notification as viewed
+    @ApiOperation({ summary: 'Mark Notification as viewed' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @Patch("/:consumerId/notifications/:notificationId")
+    async markNotificationViewed(
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
+        @Param("notificationId", ParseIntPipe) notificationId: number,
+        @Res() res
+    ) {
+        try {
+            this.logger.log(`Marking notification as viewed`);
+
+            await this.consumerService.markNotificationViewed(notificationId, consumerId);
+
+            this.logger.log(`Successfully marked notification as viewed`);
+
+            res.status(HttpStatus.OK).json({
+                message: "Notification viewed successfully",
+            })
+        } catch (err) {
+            this.logger.error(`Failed to mark notification as viewed`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to mark notification as viewed",
             });
         }
     }

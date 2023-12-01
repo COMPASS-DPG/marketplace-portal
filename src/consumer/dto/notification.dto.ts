@@ -23,4 +23,5 @@ export class NotificationResponseDto extends CreateNotificationDto {
     readonly id: number;
     readonly consumerId: string;
     readonly status: NotificationStatus;
+    readonly createdAt: Date;
 }

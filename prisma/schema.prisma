@@ -34,23 +34,26 @@ model ConsumerMetadata {
 }
 
 model ConsumerCourseMetadata {
-  id                  Int                   @id @default(autoincrement())
-  consumerId          String    
-  courseId            Int       
-  status              CourseProgressStatus  @default(IN_PROGRESS)
-  walletTransactionId Int
-  becknTransactionId  Int
-  rating              Int?
-  feedback            String?
-  CourseInfo          CourseInfo            @relation(fields: [courseId], references: [courseId])
-  ConsumerMetadata    ConsumerMetadata      @relation(fields: [consumerId], references: [consumerId])
+  id                      Int                   @id @default(autoincrement())
+  consumerId              String    
+  courseId                Int       
+  status                  CourseProgressStatus  @default(IN_PROGRESS)
+  walletTransactionId     Int
+  becknTransactionId      Int
+  rating                  Int?
+  feedback                String?
+  purchasedAt             DateTime              @default(now())
+  completedAt             DateTime?              
+  certificateCredentialId String?
+  CourseInfo              CourseInfo            @relation(fields: [courseId], references: [courseId])
+  ConsumerMetadata        ConsumerMetadata      @relation(fields: [consumerId], references: [consumerId])
 
   @@unique([consumerId, courseId])
 }
 
 model CourseInfo {
   courseId                Int                       @id
-  bppId                   String
+  bppUrl                  String?
   title                   String
   description             String
   credits                 Int
@@ -58,6 +61,9 @@ model CourseInfo {
   language                String[]
   courseLink              String
   providerName            String
+  author                  String
+  avgRating               Float?
+  competency              Json
   ConsumerCourseMetadata  ConsumerCourseMetadata[]
 }
 
@@ -74,5 +80,6 @@ model Notification {
   text                String
   link                String
   status              NotificationStatus  @default(NOT_VIEWED)
+  createdAt           DateTime            @default(now())
   ConsumerMetadata    ConsumerMetadata    @relation(fields: [consumerId], references: [consumerId])
 }

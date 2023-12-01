@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { EditConsumerDto } from './dto/edit-consumer.dto';
 import axios from 'axios';
+import { AdminConsumerDtoResponse } from './dto/consumer-response.dto';
 
 @Injectable()
 export class AdminService {
@@ -9,11 +10,8 @@ export class AdminService {
     constructor(private prisma: PrismaService) { }
 
     async validateAdmin(adminId: string) {
-        const admin = await this.getAdmin(adminId);
-        if (!admin) {
-            throw new NotFoundException(`Admin with id #${admin} not found`);
-        }
-        return true
+        await this.getAdmin(adminId);
+        return true;
     }
 
     async login(email: string, password: string) {
@@ -31,13 +29,43 @@ export class AdminService {
             where: { id: adminId }
         });
         if (!admin) {
-            throw new NotFoundException(`Admin with id #${admin} not found`);
+            throw new NotFoundException(`Admin with id ${adminId} not found`);
         }
         return admin;
     }
 
-    async getAllConsumers() {
-        return await this.prisma.consumerMetadata.findMany({});
+    async getAllConsumers(adminId: string): Promise<AdminConsumerDtoResponse[]> {
+        const consumers = await this.prisma.consumerMetadata.findMany({
+            include: {
+                _count: {
+                    select: {
+                        ConsumerCourseMetadata: true
+                    }
+                }
+            }
+        });
+        // forward to user service to fetch name, role
+
+        
+        // forward to wallet service to fetch wallet balance
+        if(!process.env.WALLET_SERVICE_URL)
+            throw new HttpException("Wallet service URL not defined", 500);
+
+        const endpoint = `/api/admin/${adminId}/credits/consumers`;
+        const url = process.env.WALLET_SERVICE_URL + endpoint;
+
+        const response = await axios.get(url);
+        const creditsMap = {};
+        response.data.data.credits.forEach((credit) => {
+            creditsMap[credit.consumerId] = credit.credits;
+        });        
+        return consumers.map((c) => {
+            return {
+                consumerId: c.consumerId,
+                numCoursesPurchased: c._count.ConsumerCourseMetadata,
+                credits: creditsMap[c.consumerId]
+            }
+        })
     }
 
     async getConsumer(consumerId: string) {
@@ -55,6 +83,9 @@ export class AdminService {
 
     async addCredits(adminId: string, consumerId: string, credits: number) {
         const walletService = process.env.WALLET_SERVICE_URL;
+        if(!walletService)
+            throw new HttpException("Wallet service URL not defined", 500);
+
         const endpoint = `/api/admin/${adminId}/add-credits`;
         const url = walletService + endpoint;
         const reqBody = {
@@ -66,6 +97,9 @@ export class AdminService {
 
     async reduceCredits(adminId: string, consumerId: string, credits: number) {
         const walletService = process.env.WALLET_SERVICE_URL;
+        if(!walletService)
+            throw new HttpException("Wallet service URL not defined", 500);
+        
         const endpoint = `/api/admin/${adminId}/reduce-credits`;
         const url = walletService + endpoint;
         const reqBody = {

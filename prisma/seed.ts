@@ -10,7 +10,8 @@ const main = async () => {
         data: {
             name: "Sanchit Uke",
             email: "sanchit@esmagico.in",
-            password: "asdfghjkl"
+            password: "asdfghjkl",
+            id: "123e4567-e89b-42d3-a456-556642440020"
         }
     });
 
@@ -43,7 +44,14 @@ const main = async () => {
             imageLink: "https://courses.nestjs.com/img/logo.svg",
             providerName: "Udemy",
             language: ["en"],
-            bppId: "xyz"
+            bppUrl: "xyz",
+            avgRating: 4.5,
+            author: "Stephen Grider",
+            competency: {
+                "API Development": ["Level1", "Level2"],
+                "Typescript": ["Level1"],
+                "Backend engineering": ["Level1"]
+            }
         }, {
             courseId: 2,
             title: "Graphic Design Masterclass",
@@ -53,7 +61,14 @@ const main = async () => {
             imageLink: "https://www.unite.ai/wp-content/uploads/2023/05/emily-bernal-v9vII5gV8Lw-unsplash.jpg",
             providerName: "Udemy",
             language: ["en"],
-            bppId: "xyz"
+            bppUrl: "xyz",
+            avgRating: 4.5,
+            author: "Lindsay Marsh",
+            competency: {
+                "API Development": ["Level1", "Level2"],
+                "Typescript": ["Level1"],
+                "Backend engineering": ["Level1"]
+            }
         }, {
             courseId: 3,
             title: "Python for Data Science",
@@ -63,13 +78,20 @@ const main = async () => {
             imageLink: "https://blog.imarticus.org/wp-content/uploads/2021/12/learn-Python-for-data-science.jpg",
             providerName: "Coursera",
             language: ["en"],
-            bppId: "xyz"
+            bppUrl: "xyz",
+            author: "Jose Portilla",
+            avgRating: 4.5,
+            competency: {
+                "API Development": ["Level1", "Level2"],
+                "Typescript": ["Level1"],
+                "Backend engineering": ["Level1"]
+            }
         }]
     })
     const purchasedCourses = await prisma.consumerCourseMetadata.createMany({
         data: [{
             courseId: 1,
-            consumerId: "123e4567-e89b-42d3-a456-556642440001",
+            consumerId: "123e4567-e89b-42d3-a456-556642440000",
             walletTransactionId: 0,
             becknTransactionId: 0
         }, {
@@ -81,7 +103,7 @@ const main = async () => {
 
         }, {
             courseId: 1,
-            consumerId: "123e4567-e89b-42d3-a456-556642440002",
+            consumerId: "123e4567-e89b-42d3-a456-556642440001",
             walletTransactionId: 0,
             becknTransactionId: 0,
             status: CourseProgressStatus.COMPLETED,
@@ -89,7 +111,7 @@ const main = async () => {
             feedback: "Great course"
         }, {
             courseId: 3,
-            consumerId: "123e4567-e89b-42d3-a456-556642440002",
+            consumerId: "123e4567-e89b-42d3-a456-556642440001",
             walletTransactionId: 0,
             becknTransactionId: 0
         }]
