@@ -78,25 +78,99 @@ export class ConsumerService {
 
     async viewCoursePurchaseHistory(consumerId: string): Promise<PurchasedCourseDto[]> {
 
-        return this.prisma.consumerCourseMetadata.findMany({
+        const consumerCourses = await this.prisma.consumerCourseMetadata.findMany({
             where: {
                 consumerId
             },
             include: {
-                CourseInfo: true
+                CourseInfo: {
+                    include: {
+                        _count: {
+                            select: {
+                                ConsumerCourseMetadata: true
+                            }
+                        }
+                    
+                    }
+                }
+            }
+        });
+        return consumerCourses.map((c) => {
+            return {
+                id: c.id,
+                courseId: c.courseId,
+                becknTransactionId: c.becknTransactionId,
+                consumerId: c.consumerId,
+                feedback: c.feedback,
+                purchasedAt: c.purchasedAt,
+                rating: c.rating,
+                status: c.status,
+                walletTransactionId: c.walletTransactionId,
+                CourseInfo: {
+                    title: c.CourseInfo.title,
+                    description: c.CourseInfo.description,
+                    credits: c.CourseInfo.credits,
+                    imageLink: c.CourseInfo.imageLink,
+                    language: c.CourseInfo.language,
+                    courseLink: c.CourseInfo.courseLink,
+                    providerName: c.CourseInfo.providerName,
+                    author: c.CourseInfo.author,
+                    avgRating: c.CourseInfo.avgRating,
+                    bppUrl: c.CourseInfo.bppUrl,
+                    competency: c.CourseInfo.competency,
+                    courseId: c.CourseInfo.courseId,
+                    numberOfPurchases: c.CourseInfo._count.ConsumerCourseMetadata,
+                }
             }
         });
     }
 
     async fetchOngoingCourses(consumerId: string): Promise<PurchasedCourseDto[]> {
 
-        return this.prisma.consumerCourseMetadata.findMany({
+        const consumerCourses = await this.prisma.consumerCourseMetadata.findMany({
             where: {
                 consumerId,
                 status: CourseProgressStatus.IN_PROGRESS
             },
             include: {
-                CourseInfo: true
+                CourseInfo: {
+                    include: {
+                        _count: {
+                            select: {
+                                ConsumerCourseMetadata: true
+                            }
+                        }
+                    
+                    }
+                }
+            }
+        });
+        return consumerCourses.map((c) => {
+            return {
+                id: c.id,
+                courseId: c.courseId,
+                becknTransactionId: c.becknTransactionId,
+                consumerId: c.consumerId,
+                feedback: c.feedback,
+                purchasedAt: c.purchasedAt,
+                rating: c.rating,
+                status: c.status,
+                walletTransactionId: c.walletTransactionId,
+                CourseInfo: {
+                    title: c.CourseInfo.title,
+                    description: c.CourseInfo.description,
+                    credits: c.CourseInfo.credits,
+                    imageLink: c.CourseInfo.imageLink,
+                    language: c.CourseInfo.language,
+                    courseLink: c.CourseInfo.courseLink,
+                    providerName: c.CourseInfo.providerName,
+                    author: c.CourseInfo.author,
+                    avgRating: c.CourseInfo.avgRating,
+                    bppUrl: c.CourseInfo.bppUrl,
+                    competency: c.CourseInfo.competency,
+                    courseId: c.CourseInfo.courseId,
+                    numberOfPurchases: c.CourseInfo._count.ConsumerCourseMetadata,
+                }
             }
         });
     }
@@ -364,11 +438,36 @@ export class ConsumerService {
 
         const consumer = await this.getConsumer(consumerId);
 
-        return this.prisma.courseInfo.findMany({
+        const courses = await this.prisma.courseInfo.findMany({
             where: {
                 courseId: {
                     in: consumer.savedCourses
                 }
+            },
+            include: {
+                _count: {
+                    select: {
+                        ConsumerCourseMetadata: true
+                    }
+                
+                }
+            }
+        });
+        return courses.map((course) => {
+            return {
+                title: course.title,
+                description: course.description,
+                credits: course.credits,
+                imageLink: course.imageLink,
+                language: course.language,
+                courseLink: course.courseLink,
+                providerName: course.providerName,
+                author: course.author,
+                avgRating: course.avgRating,
+                bppUrl: course.bppUrl,
+                competency: course.competency,
+                courseId: course.courseId,
+                numberOfPurchases: course._count.ConsumerCourseMetadata,
             }
         });
     }

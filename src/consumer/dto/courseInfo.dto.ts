@@ -82,6 +82,7 @@ export class CourseInfoResponseDto {
     readonly author: string;
     readonly avgRating: number | null;
     readonly competency: JsonValue;
+    readonly numberOfPurchases?: number;
 }
 
 export class CourseSaveStatusDto {

@@ -3,7 +3,7 @@ import { ConsumerService } from "./consumer.service";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ConsumerAccountDto, CreditsDto } from "./dto/account.dto";
 import { PurchasedCourseDto } from "./dto/purchasedCourse.dto";
-import { CourseInfoDto, CourseSaveStatusDto } from "./dto/courseInfo.dto";
+import { CourseInfoDto, CourseInfoResponseDto, CourseSaveStatusDto } from "./dto/courseInfo.dto";
 import { TransactionResponse } from "./dto/transaction.dto";
 import { FeedbackDto } from "./dto/feedback.dto";
 import { CreateNotificationDto, NotificationResponseDto } from "./dto/notification.dto";
@@ -457,7 +457,7 @@ export class ConsumerController {
 
     // Get all saved courses
     @ApiOperation({ summary: 'Get all saved courses' })
-    @ApiResponse({ status: HttpStatus.OK, type: [CourseInfoDto] })
+    @ApiResponse({ status: HttpStatus.OK, type: [CourseInfoResponseDto] })
     @Get("/:consumerId/course/saved")
     async getSavedCourses(
         @Param("consumerId", ParseUUIDPipe) consumerId: string,
