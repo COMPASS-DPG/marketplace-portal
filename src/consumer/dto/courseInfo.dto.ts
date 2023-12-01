@@ -10,10 +10,10 @@ export class CourseInfoDto {
     @Min(0)
     courseId: number;
     
-    // course BPP ID
-    @IsNotEmpty()
+    // course BPP URL
+    @IsOptional()
     @IsString()
-    bppId: string;
+    bppUrl?: string;
     
     // course title
     @IsNotEmpty()
@@ -52,6 +52,11 @@ export class CourseInfoDto {
     @IsString()
     providerName: string;
 
+    // name of course author
+    @IsNotEmpty()
+    @IsString()
+    author: string;
+
     // average rating of the course
     @IsOptional()
     @IsNumber()
@@ -66,7 +71,7 @@ export class CourseInfoDto {
 export class CourseInfoResponseDto { 
 
     readonly courseId: number;
-    readonly bppId: string;
+    readonly bppUrl: string | null;
     readonly title: string;
     readonly description: string;
     readonly credits: number;
@@ -74,6 +79,7 @@ export class CourseInfoResponseDto {
     readonly language: string[];
     readonly courseLink: string;
     readonly providerName: string;
+    readonly author: string;
     readonly avgRating: number | null;
     readonly competency: JsonValue;
 }

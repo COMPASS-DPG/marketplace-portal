@@ -229,6 +229,18 @@ export class ConsumerService {
 
         // const credentialId = response.data.data.credential.id;
 
+        // await this.prisma.consumerCourseMetadata.update({
+        //     where: {
+        //         consumerId_courseId: {
+        //             consumerId,
+        //             courseId: feedbackDto.courseId
+        //         }
+        //     },
+        //     data: {
+        //         certificateCredentialId: credentialId
+        //     }
+        // });
+
         // forward to passbook to save certificate
 
 
