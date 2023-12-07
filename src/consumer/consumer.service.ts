@@ -309,28 +309,28 @@ export class ConsumerService {
 
         // forward to passbook to save certificate
 
-        
-        // `/rating` to BAP
-        // const ratingEndpoint = `/`;
-        // const ratingBody: RatingRequestDto = {
-        //     courseId: consumerCourseData.CourseInfo.courseId,
-        //     rating: feedbackDto.rating,
-        //     bppId: consumerCourseData.CourseInfo.bppId,
-        //     bppUri: consumerCourseData.CourseInfo.bppUri
-        // }
+        if(consumerCourseData.CourseInfo.bppId != COURSE_MANAGER_BPP_ID) {
+            // `/rating` to BAP
+            // const ratingEndpoint = `/`;
+            // const ratingBody: RatingRequestDto = {
+            //     courseId: consumerCourseData.CourseInfo.courseId,
+            //     rating: feedbackDto.rating,
+            //     bppId: consumerCourseData.CourseInfo.bppId,
+            //     bppUri: consumerCourseData.CourseInfo.bppUri
+            // }
 
-        // await axios.post(process.env.BAP_URI + ratingEndpoint, ratingBody);
-        
-        // forward to course manager
-        if(!process.env.COURSE_MANAGER_URL)
-            throw new HttpException("Course Manager URL not defined", 500);
-        
-        const endpoint = `/api/course/${consumerCourseData.CourseInfo.courseId}/feedback/${consumerId}`;
-        const feedbackBody = {
-            rating: feedbackDto.rating
+            // await axios.post(process.env.BAP_URI + ratingEndpoint, ratingBody);
+        } else {
+            // forward to course manager
+            if(!process.env.COURSE_MANAGER_URL)
+                throw new HttpException("Course Manager URL not defined", 500);
+            
+            const endpoint = `/api/course/${consumerCourseData.CourseInfo.courseId}/feedback/${consumerId}`;
+            const feedbackBody = {
+                rating: feedbackDto.rating
+            }
+            await axios.patch(process.env.COURSE_MANAGER_URL + endpoint, feedbackBody);
         }
-        await axios.patch(process.env.COURSE_MANAGER_URL + endpoint, feedbackBody);
-
         // update marketplace metadata model
         await this.prisma.consumerCourseMetadata.update({
             where: {

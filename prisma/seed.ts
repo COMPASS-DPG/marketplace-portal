@@ -1,5 +1,5 @@
 import { CourseProgressStatus, PrismaClient } from "@prisma/client"
-import { COURSE_MANAGER_BPP_ID } from "src/utils/constants";
+import { COURSE_MANAGER_BPP_ID } from "../src/utils/constants";
 
 
 const prisma = new PrismaClient();
@@ -108,6 +108,8 @@ const main = async () => {
             courseInfoId: 2,
             consumerId: "123e4567-e89b-42d3-a456-556642440000",
             becknTransactionId: "123e4567-e89b-42d3-a456-556642440071",
+            status: CourseProgressStatus.COMPLETED,
+            completedAt: new Date(),
         },{
             courseInfoId: 2,
             consumerId: "123e4567-e89b-42d3-a456-556642440001",
