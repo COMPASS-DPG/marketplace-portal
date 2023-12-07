@@ -1,7 +1,6 @@
 import { Body, Controller, Get, HttpStatus, NotFoundException, Param, Patch, Post, Res, Logger, ParseUUIDPipe } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { LoginDto, LoginResponseDto } from './dto/login.dto';
 import { AdminConsumerDtoResponse, ConsumerDtoResponse } from './dto/consumer-response.dto';
 import { EditConsumerDto } from './dto/edit-consumer.dto';
 import { CreditRequestDto } from './dto/credit-request.dto';
@@ -15,41 +14,6 @@ export class AdminController {
     private readonly logger = new Logger(AdminController.name);
 
     constructor(private adminService: AdminService) { }
-
-    @ApiOperation({ summary: 'Login for admin' })
-    @ApiResponse({ status: HttpStatus.OK, type: LoginResponseDto })
-    @Post("/login")
-    // admin login
-    async login(
-        @Body() loginDto: LoginDto,
-        @Res() res
-    ) {
-        try {
-            const email = loginDto.email;
-            const password = loginDto.password;
-
-            this.logger.log(`Logging in as admin`)
-
-            const adminId = await this.adminService.login(email, password);
-
-            this.logger.log(`Successfully logged in as admin`)
-
-            res.status(HttpStatus.OK).json({
-                message: "login successful",
-                data: {
-                    adminId
-                }
-            });
-        } catch (err) {
-            this.logger.error(`Failed to login the admin with the given credentials`);
-
-            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
-            res.status(statusCode).json({
-                statusCode, 
-                message: errorMessage || "Failed to login as admin",
-            });
-        }
-    }
 
     @ApiOperation({ summary: 'View all consumers on marketplace' })
     @ApiResponse({ status: HttpStatus.OK, type: [AdminConsumerDtoResponse], isArray: true })

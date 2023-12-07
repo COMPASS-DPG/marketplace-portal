@@ -12,6 +12,7 @@ const main = async () => {
             name: "Sanchit Uke",
             email: "sanchit@esmagico.in",
             password: "asdfghjkl",
+            image: "https://avatars.githubusercontent.com/u/18013689?v=4",
             id: "123e4567-e89b-42d3-a456-556642440020"
         }
     });
