@@ -2,15 +2,18 @@ import { Body, Controller, Get, HttpStatus, Logger, Param, ParseIntPipe, ParseUU
 import { ConsumerService } from "./consumer.service";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ConsumerAccountDto, CreditsDto } from "./dto/account.dto";
-import { PurchasedCourseDto } from "./dto/purchasedCourse.dto";
-import { CourseInfoDto, CourseInfoResponseDto, CourseSaveStatusDto } from "./dto/courseInfo.dto";
+import { PurchaseStatusDto, PurchasedCourseDto } from "./dto/purchasedCourse.dto";
+import { CourseInfoDto, CourseInfoResponseDto } from "./dto/courseInfo.dto";
 import { TransactionResponse } from "./dto/transaction.dto";
 import { FeedbackDto } from "./dto/feedback.dto";
 import { CreateNotificationDto, NotificationResponseDto } from "./dto/notification.dto";
 import { RequestDto } from "./dto/create-request.dto";
 import { getPrismaErrorStatusAndMessage } from "src/utils/utils";
 import { ConsumerSignupDto } from "./dto/signup.dto";
-import { CourseResponse } from "./dto/course-response.dto";
+import { CourseResponse, SaveStatusResDto } from "./dto/course-response.dto";
+import { CourseProgressStatus } from "@prisma/client";
+import { SearchResponseDto } from "./dto/search-response.dto";
+import { CourseIdDto } from "./dto/course-id.dto";
 
 
 @Controller('consumer')
@@ -126,7 +129,7 @@ export class ConsumerController {
         try {
             this.logger.log(`Getting consumer ongoing courses`);
 
-            const consumerCourses = await this.consumerService.fetchOngoingCourses(consumerId);
+            const consumerCourses = await this.consumerService.viewCoursePurchaseHistory(consumerId, CourseProgressStatus.IN_PROGRESS);
 
             this.logger.log(`Successfully fetched consumer ongoing courses`);
 
@@ -159,7 +162,7 @@ export class ConsumerController {
         try {
             this.logger.log(`Saving course`);
 
-            await this.consumerService.saveCourse(consumerId, courseInfoDto.courseId, courseInfoDto);
+            await this.consumerService.saveCourse(consumerId, courseInfoDto);
 
             this.logger.log(`Successfully saved the course`);
 
@@ -179,16 +182,16 @@ export class ConsumerController {
 
     @ApiOperation({ summary: 'Unsave a course' })
     @ApiResponse({ status: HttpStatus.OK })
-    @Patch("/:consumerId/course/:courseId/unsave")
+    @Patch("/:consumerId/course/unsave")
     async unsaveCourse(
         @Param("consumerId", ParseUUIDPipe) consumerId: string,
-        @Param("courseId", ParseIntPipe) courseId: number,
+        @Body() courseIdDto: CourseIdDto,
         @Res() res
     ) {
         try {
             this.logger.log(`Removing course from saved courses`);
 
-            await this.consumerService.unsaveCourse(consumerId, courseId);
+            await this.consumerService.unsaveCourse(consumerId, courseIdDto);
 
             this.logger.log(`Successfully unsaved the course`);
 
@@ -207,17 +210,17 @@ export class ConsumerController {
     }
 
     @ApiOperation({ summary: 'check if course is saved' })
-    @ApiResponse({ status: HttpStatus.OK, type: CourseSaveStatusDto })
-    @Get("/:consumerId/course/:courseId/save")
+    @ApiResponse({ status: HttpStatus.OK, type: SaveStatusResDto })
+    @Post("/:consumerId/course/save/status")
     async checkSaveStatus(
         @Param("consumerId", ParseUUIDPipe) consumerId: string,
-        @Param("courseId", ParseIntPipe) courseId: number,
+        @Body() courseIdDto: CourseIdDto,
         @Res() res
     ) {
         try {
             this.logger.log(`Checking course from saved courses`);
 
-            const saved = await this.consumerService.checkSaveStatus(consumerId, courseId);
+            const saved = await this.consumerService.checkSaveStatus(consumerId, courseIdDto);
 
             this.logger.log(`Successfully checked the course`);
 
@@ -332,7 +335,7 @@ export class ConsumerController {
 
     // Search for courses
     @ApiOperation({ summary: 'Search for courses' })
-    @ApiResponse({ status: HttpStatus.OK, type: [CourseResponse] })
+    @ApiResponse({ status: HttpStatus.OK, type: SearchResponseDto })
     @Get("/course/search")
     async searchCourses(
         @Query('searchInput') searchInput: string,
@@ -341,14 +344,14 @@ export class ConsumerController {
         try {
             this.logger.log(`Searching for courses`);
 
-            const courses = await this.consumerService.searchCourses(searchInput);
+            const searchResponse = await this.consumerService.searchCourses(searchInput);
 
             this.logger.log(`Successfully fetched the courses`);
             
             res.status(HttpStatus.OK).json({
                 message: "fetch successful",
                 data: {
-                    courses
+                    searchResponse
                 }
             });
         } catch (err) {
@@ -398,7 +401,7 @@ export class ConsumerController {
     @ApiResponse({ status: HttpStatus.OK, type: CourseResponse })
     @Get("/course/:courseId")
     async viewCourse(
-        @Param("courseId", ParseIntPipe) courseId: number,
+        @Param("courseId", ParseUUIDPipe) courseId: string,
         @Res() res
     ) {
         try {
@@ -451,6 +454,67 @@ export class ConsumerController {
             res.status(statusCode).json({
                 statusCode, 
                 message: errorMessage || "Purchase failed",
+            });
+        }
+    }
+
+    // Reverse the transaction of a failed purchase
+    @ApiOperation({ summary: 'Reverse failed purchase transaction' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @Post("/:consumerId/course/purchase/reverse")
+    async reversePurchase(
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
+        @Body() courseIdDto: CourseIdDto,
+        @Res() res
+    ) {
+        try {
+            this.logger.log(`Reversing course purchase transaction`);
+
+            await this.consumerService.reversePurchase(consumerId, courseIdDto);
+
+            this.logger.log(`reverse purchase successful`);
+            
+            res.status(HttpStatus.OK).json({
+                message: "transaction reversal successful",
+            });
+        } catch (err) {
+            this.logger.error(`transaction reversal failed`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "transaction reversal failed",
+            });
+        }
+    }
+
+    // Check whether the course is purchased by the consumer
+    @ApiOperation({ summary: 'Check course purchase status' })
+    @ApiResponse({ status: HttpStatus.OK, type: PurchaseStatusDto })
+    @Post("/:consumerId/course/purchase/status")
+    async getPurchaseStatus(
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
+        @Body() courseIdDto: CourseIdDto,
+        @Res() res
+    ) {
+        try {
+            this.logger.log(`Checking course purchase status`);
+
+            const purchased = await this.consumerService.getPurchaseStatus(consumerId, courseIdDto);
+
+            this.logger.log(`Purchase check successful`);
+            
+            res.status(HttpStatus.OK).json({
+                message: "purchase check successful",
+                purchased
+            });
+        } catch (err) {
+            this.logger.error(`Purchase check failed`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Purchase check failed",
             });
         }
     }
@@ -585,13 +649,13 @@ export class ConsumerController {
     @Patch("/:consumerId/course/:courseId/complete")
     async onCourseCompletion(
         @Param("consumerId", ParseUUIDPipe) consumerId: string,
-        @Param("courseId", ParseIntPipe) courseId: number,
+        @Body() courseIdDto: CourseIdDto,
         @Res() res
     ) {
         try {
             this.logger.log(`Recording completion of a course`);
 
-            await this.consumerService.completeCourse(consumerId, courseId);
+            await this.consumerService.completeCourse(consumerId, courseIdDto);
 
             this.logger.log(`Course completion recorded successfully`);
             

@@ -4,16 +4,20 @@ import { CompetencyMap } from "src/utils/types";
 
 export class CourseInfoDto {
 
-    // course ID
+    // course ID as in the BPP
     @IsNotEmpty()
-    @IsInt()
-    @Min(0)
-    courseId: number;
-    
-    // course BPP URL
+    @IsString()
+    courseId: string;
+
+    // course BPP id
     @IsOptional()
     @IsString()
-    bppUrl?: string;
+    bppId?: string;
+    
+    // course BPP URI
+    @IsOptional()
+    @IsString()
+    bppUri?: string;
     
     // course title
     @IsNotEmpty()
@@ -66,12 +70,19 @@ export class CourseInfoDto {
     @IsNotEmpty()
     @IsObject()
     competency: CompetencyMap;
+
+    // provider ID
+    @IsNotEmpty()
+    @IsString()
+    providerId: string;
+
 }
 
 export class CourseInfoResponseDto { 
 
-    readonly courseId: number;
-    readonly bppUrl: string | null;
+    readonly courseId: string;
+    readonly bppId: string | null;
+    readonly bppUri: string | null;
     readonly title: string;
     readonly description: string;
     readonly credits: number;
@@ -82,9 +93,6 @@ export class CourseInfoResponseDto {
     readonly author: string;
     readonly avgRating: number | null;
     readonly competency: JsonValue;
+    readonly providerId: string;
     readonly numberOfPurchases?: number;
-}
-
-export class CourseSaveStatusDto {
-    readonly saved: boolean
 }

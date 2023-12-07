@@ -4,14 +4,16 @@ import { ConsumerAccountDto } from './dto/account.dto';
 import { PurchasedCourseDto } from './dto/purchasedCourse.dto';
 import { CourseInfoDto, CourseInfoResponseDto } from './dto/courseInfo.dto';
 import { TransactionResponse } from './dto/transaction.dto';
-import { FeedbackDto } from './dto/feedback.dto';
+import { FeedbackDto, RatingRequestDto } from './dto/feedback.dto';
 import { CreateNotificationDto, NotificationResponseDto } from './dto/notification.dto';
 import { CourseProgressStatus, NotificationStatus } from '@prisma/client';
 import { CreateRequestDto, RequestDto, RequestStatus, RequestType } from './dto/create-request.dto';
 import axios from 'axios';
-import { PurchaseDto } from './dto/purchase.dto';
 import { ConsumerSignupDto } from './dto/signup.dto';
 import { CourseResponse } from './dto/course-response.dto';
+import { COURSE_MANAGER_BPP_ID } from 'src/utils/constants';
+import { SearchResponseDto } from './dto/search-response.dto';
+import { CourseIdDto } from './dto/course-id.dto';
 
 @Injectable()
 export class ConsumerService {
@@ -26,6 +28,19 @@ export class ConsumerService {
             }
         });
         if (!consumer)
+            throw new NotFoundException("consumer does not exist");
+        return consumer;
+    }
+
+    async getConsumerFromUserService(consumerId: string) {
+
+        if(!process.env.USER_SERVICE_URL)
+            throw new HttpException("User Service URL not defined", 500);
+
+        const endpoint = `/api/users/${consumerId}`;
+        const response = await axios.get(process.env.USER_SERVICE_URL + endpoint);
+        const consumer = response.data.data;
+        if(!consumer)
             throw new NotFoundException("consumer does not exist");
         return consumer;
     }
@@ -76,61 +91,15 @@ export class ConsumerService {
         }       
     }
 
-    async viewCoursePurchaseHistory(consumerId: string): Promise<PurchasedCourseDto[]> {
-
-        const consumerCourses = await this.prisma.consumerCourseMetadata.findMany({
-            where: {
-                consumerId
-            },
-            include: {
-                CourseInfo: {
-                    include: {
-                        _count: {
-                            select: {
-                                ConsumerCourseMetadata: true
-                            }
-                        }
-                    
-                    }
-                }
-            }
-        });
-        return consumerCourses.map((c) => {
-            return {
-                id: c.id,
-                courseId: c.courseId,
-                becknTransactionId: c.becknTransactionId,
-                consumerId: c.consumerId,
-                feedback: c.feedback,
-                purchasedAt: c.purchasedAt,
-                rating: c.rating,
-                status: c.status,
-                walletTransactionId: c.walletTransactionId,
-                CourseInfo: {
-                    title: c.CourseInfo.title,
-                    description: c.CourseInfo.description,
-                    credits: c.CourseInfo.credits,
-                    imageLink: c.CourseInfo.imageLink,
-                    language: c.CourseInfo.language,
-                    courseLink: c.CourseInfo.courseLink,
-                    providerName: c.CourseInfo.providerName,
-                    author: c.CourseInfo.author,
-                    avgRating: c.CourseInfo.avgRating,
-                    bppUrl: c.CourseInfo.bppUrl,
-                    competency: c.CourseInfo.competency,
-                    courseId: c.CourseInfo.courseId,
-                    numberOfPurchases: c.CourseInfo._count.ConsumerCourseMetadata,
-                }
-            }
-        });
-    }
-
-    async fetchOngoingCourses(consumerId: string): Promise<PurchasedCourseDto[]> {
+    async viewCoursePurchaseHistory(
+        consumerId: string, 
+        courseProgressStatus?: CourseProgressStatus
+    ): Promise<PurchasedCourseDto[]> {
 
         const consumerCourses = await this.prisma.consumerCourseMetadata.findMany({
             where: {
                 consumerId,
-                status: CourseProgressStatus.IN_PROGRESS
+                status: courseProgressStatus
             },
             include: {
                 CourseInfo: {
@@ -148,14 +117,15 @@ export class ConsumerService {
         return consumerCourses.map((c) => {
             return {
                 id: c.id,
-                courseId: c.courseId,
+                courseInfoId: c.courseInfoId,
                 becknTransactionId: c.becknTransactionId,
                 consumerId: c.consumerId,
                 feedback: c.feedback,
                 purchasedAt: c.purchasedAt,
                 rating: c.rating,
                 status: c.status,
-                walletTransactionId: c.walletTransactionId,
+                becknMessageId: c.becknMessageId,
+                completedAt: c.completedAt,
                 CourseInfo: {
                     title: c.CourseInfo.title,
                     description: c.CourseInfo.description,
@@ -166,7 +136,9 @@ export class ConsumerService {
                     providerName: c.CourseInfo.providerName,
                     author: c.CourseInfo.author,
                     avgRating: c.CourseInfo.avgRating,
-                    bppUrl: c.CourseInfo.bppUrl,
+                    bppId: c.CourseInfo.bppId,
+                    bppUri: c.CourseInfo.bppUri,
+                    providerId: c.CourseInfo.providerId,
                     competency: c.CourseInfo.competency,
                     courseId: c.CourseInfo.courseId,
                     numberOfPurchases: c.CourseInfo._count.ConsumerCourseMetadata,
@@ -175,41 +147,56 @@ export class ConsumerService {
         });
     }
 
-    async saveCourse(consumerId: string, courseId: number, courseInfoDto: CourseInfoDto) {
+    async saveCourse(consumerId: string, courseInfoDto: CourseInfoDto) {
 
         const consumer = await this.getConsumer(consumerId);
 
-        if(consumer.savedCourses.find((c) => c == courseId))
-            throw new BadRequestException("Course already saved");
+        let courseInfo = await this.prisma.courseInfo.findUnique({
+            where: {
+                courseId_bppId: {
+                    courseId: courseInfoDto.courseId,
+                    bppId: courseInfoDto.bppId ?? COURSE_MANAGER_BPP_ID
+                }
+            }
+        });
+        if(courseInfo != null) {
+            if(consumer.savedCourses.find((c) => c == courseInfo!.id))
+                return
+        } else {
+            const {bppId, bppUri, ...rest} = courseInfoDto;
+            courseInfo = await this.prisma.courseInfo.create({
+                data: {
+                    ...rest,
+                    bppId: bppId ?? COURSE_MANAGER_BPP_ID,
+                    bppUri: bppUri ?? process.env.COURSE_MANAGER_URL!
+                }
+            });
+        }
         await this.prisma.consumerMetadata.update({
             where: {
                 consumerId,
             },
             data: {
                 savedCourses: {
-                    push: courseId
+                    push: courseInfo.id
                 }
             }
         });
-        //  Create an entry if it does not exist and update it if it does.
-        //  There may be a race condition for inserting courseInfo for the same course.
-        //  In such a case, insertion happens once and no error is thrown
-        try {
-            await this.prisma.courseInfo.upsert({
-                where: {
-                    courseId: courseInfoDto.courseId
-                },
-                create: courseInfoDto,
-                update: courseInfoDto
-            });
-        } catch {}
     }
 
-    async unsaveCourse(consumerId: string, courseId: number) {
+    async unsaveCourse(consumerId: string,  courseIdDto: CourseIdDto) {
 
         const consumer = await this.getConsumer(consumerId);
 
-        if(!consumer.savedCourses.find((c) => c == courseId))
+        const courseInfo = await this.prisma.courseInfo.findUnique({
+            where: {
+                courseId_bppId: {
+                    courseId: courseIdDto.courseId,
+                    bppId: courseIdDto.bppId ?? COURSE_MANAGER_BPP_ID
+                }
+            }
+        });
+        if(!courseInfo || !consumer.savedCourses.find((c) => c == courseInfo.id))
             throw new BadRequestException("Course not saved");
 
         await this.prisma.consumerMetadata.update({
@@ -217,16 +204,24 @@ export class ConsumerService {
                 consumerId,
             },
             data: {
-                savedCourses: consumer.savedCourses.filter((c) => c != courseId)
+                savedCourses: consumer.savedCourses.filter((c) => c != courseInfo.id)
             }
         });
     }
 
-    async checkSaveStatus(consumerId: string, courseId: number) {
+    async checkSaveStatus(consumerId: string, courseIdDto: CourseIdDto) {
 
         const consumer = await this.getConsumer(consumerId);
 
-        if(consumer.savedCourses.find((c) => c == courseId))
+        const courseInfo = await this.prisma.courseInfo.findUnique({
+            where: {
+                courseId_bppId: {
+                    courseId: courseIdDto.courseId,
+                    bppId: courseIdDto.bppId ?? COURSE_MANAGER_BPP_ID
+                }
+            }
+        });
+        if(courseInfo && consumer.savedCourses.find((c) => c == courseInfo.id))
             return true;
 
         return false;
@@ -248,11 +243,20 @@ export class ConsumerService {
 
         const consumerCourseData = await this.prisma.consumerCourseMetadata.findUnique({
             where: {
-                consumerId_courseId: {
+                consumerId_courseInfoId: {
                     consumerId,
-                    courseId: feedbackDto.courseId
+                    courseInfoId: feedbackDto.courseInfoId
                 }
             },
+            include: {
+                CourseInfo: {
+                    select: {
+                        bppId: true,
+                        bppUri: true,
+                        courseId: true
+                    }
+                }
+            }
         });
         if(!consumerCourseData)
             throw new NotFoundException("This user has not subscribed to this course");
@@ -303,49 +307,44 @@ export class ConsumerService {
 
         // const credentialId = response.data.data.credential.id;
 
-        // await this.prisma.consumerCourseMetadata.update({
-        //     where: {
-        //         consumerId_courseId: {
-        //             consumerId,
-        //             courseId: feedbackDto.courseId
-        //         }
-        //     },
-        //     data: {
-        //         certificateCredentialId: credentialId
-        //     }
-        // });
-
         // forward to passbook to save certificate
 
         
         // `/rating` to BAP
+        // const ratingEndpoint = `/`;
+        // const ratingBody: RatingRequestDto = {
+        //     courseId: consumerCourseData.CourseInfo.courseId,
+        //     rating: feedbackDto.rating,
+        //     bppId: consumerCourseData.CourseInfo.bppId,
+        //     bppUri: consumerCourseData.CourseInfo.bppUri
+        // }
+
+        // await axios.post(process.env.BAP_URI + ratingEndpoint, ratingBody);
+        
         // forward to course manager
         if(!process.env.COURSE_MANAGER_URL)
             throw new HttpException("Course Manager URL not defined", 500);
         
-        const endpoint = `/api/course/${feedbackDto.courseId}/feedback/${consumerId}`;
+        const endpoint = `/api/course/${consumerCourseData.CourseInfo.courseId}/feedback/${consumerId}`;
         const feedbackBody = {
             rating: feedbackDto.rating
         }
-
         await axios.patch(process.env.COURSE_MANAGER_URL + endpoint, feedbackBody);
 
         // update marketplace metadata model
         await this.prisma.consumerCourseMetadata.update({
             where: {
-                consumerId_courseId: {
-                    consumerId,
-                    courseId: feedbackDto.courseId
-                }
+                id: consumerCourseData.id
             },
             data: {
                 rating: feedbackDto.rating,
-                feedback: feedbackDto.feedback
+                feedback: feedbackDto.feedback,
+                // certificateCredentialId: credentialId
             }
         });
     }
 
-    async viewCourse(courseId: number): Promise<CourseResponse> {
+    async viewCourse(courseId: string): Promise<CourseResponse> {
 
         // code to directly forward to course manager
         if(!process.env.COURSE_MANAGER_URL)
@@ -362,76 +361,176 @@ export class ConsumerService {
         return searchResults;
     }
 
-    async searchCourses(searchInput: string): Promise<CourseResponse[]> {
+    async searchCourses(searchInput: string): Promise<SearchResponseDto> {
 
         // forward to BAP(`/search)
-    
+        // if(!process.env.BAP_URI)
+        //     throw new HttpException("BAP URI not defined", 500);
+        
+        // const searchEndpoint = `/search`;
+        // const searchBody = {
+        
+        // }
+        // const searchResponse = await axios.post(process.env.BAP_URI + searchEndpoint, searchBody);
+        // const messageId = searchResponse.data.data.messageId;
 
-        // code to directly forward to course manager
+        // forward to course manager
         if(!process.env.COURSE_MANAGER_URL)
             throw new HttpException("Course manager URL not defined", 500);
         const endpoint = `/api/course/search`;
         const queryParams = `?searchInput=${searchInput}`
         const response = await axios.get(process.env.COURSE_MANAGER_URL + endpoint + queryParams);
-        // console.log(response.data);
-        return response.data.data;
+
+        return {
+            courses: response.data.data,
+            messageId: ""
+        }
     }
 
     async purchaseCourse(consumerId: string, courseInfoDto: CourseInfoDto) {
 
         await this.getConsumer(consumerId);
 
-        let consumerCourseData = await this.prisma.consumerCourseMetadata.findUnique({
+        const consumerCourseData = await this.prisma.consumerCourseMetadata.findFirst({
             where: {
-                consumerId_courseId: {
-                    consumerId,
-                    courseId: courseInfoDto.courseId
+                consumerId,
+                CourseInfo: {
+                    courseId: courseInfoDto.courseId,
+                    bppId: courseInfoDto.bppId ?? COURSE_MANAGER_BPP_ID
                 }
             }
         });
         if(consumerCourseData)
             throw new BadRequestException("Course Already purchased");
 
-        // forward to bpp
-        // `/confirm` to BAP
+        // forward to wallet service for fetching credits
+        if(!process.env.WALLET_SERVICE_URL)
+            throw new HttpException("Wallet Service URI not defined", 500);
+        
+        let credits: number;
+        const walletEndpoint = `/api/consumers/${consumerId}/credits`;
 
+        const walletResponse = await axios.get(process.env.WALLET_SERVICE_URL + walletEndpoint);
+        // console.log(response.data);
+        credits = walletResponse.data.data.credits;
 
-        // forward to course manager for purchase
-        // wallet transaction handled in course manager
-        if(!process.env.COURSE_MANAGER_URL)
-            throw new HttpException("Course manager URL not defined", 500);
-        const endpoint = `/api/course/${courseInfoDto.courseId}/purchase`;
-        const purchaseDto: PurchaseDto = {
-            consumerId,
-            transactionDescription: `Purchased course ${courseInfoDto.title}`
+        if(credits < courseInfoDto.credits)
+            throw new BadRequestException("Not enough credits");
+
+        if(courseInfoDto.bppId) {
+            // fetch user details from user service
+            // const consumer = await this.getConsumerFromUserService(consumerId);
+
+            // `/confirm` to BAP
+            // const confirmEndpoint = `/`;
+            // const confirmBody: ConfirmDto = {
+            //     providerId: courseInfoDto.providerId,
+            //     courseId: consumerCourseData.CourseInfo.courseId,
+            //     amount: courseInfoDto.credits,
+            //     bppId: consumerCourseData.CourseInfo.bppId,
+            //     bppUri: consumerCourseData.CourseInfo.bppUri
+            //     applicantProfile: {
+            //          name: consumer.name,
+            //          email: consumer.email,
+            //          phone: consumer.phone
+            //      }
+            // }
+            // const confirmResponse = await axios.post(process.env.BAP_URI + confirmEndpoint, confirmBody);
+        } else {
+            // forward to course manager for purchase
+            if(!process.env.COURSE_MANAGER_URL)
+                throw new HttpException("Course manager URL not defined", 500);
+
+            const endpoint = `/api/course/${courseInfoDto.courseId}/purchase/${consumerId}`;
+
+            await axios.post(process.env.COURSE_MANAGER_URL + endpoint);
         }
 
-        const response = await axios.post(process.env.COURSE_MANAGER_URL + endpoint, purchaseDto);
-        
-        // Rest of the updates can be done in on_confirm
+        // forward to wallet service for transaction
+        const endpoint = `/api/consumers/${consumerId}/purchase`;
+        const walletPurchaseBody = {
+            providerId: courseInfoDto.providerId,
+            credits: courseInfoDto.credits,
+            description: `Purchased course ${courseInfoDto.title}`
+        }
+        await axios.post(process.env.WALLET_SERVICE_URL + endpoint, walletPurchaseBody);
 
-        //  Create an entry to add the course info if it does not exist and update it if it does. 
-        //  There may be a race condition for inserting courseInfo for the same course.
-        //  In such a case, insertion happens once and no error is thrown
-        try {
-            await this.prisma.courseInfo.upsert({
-                where: {
-                    courseId: courseInfoDto.courseId
-                },
-                create: courseInfoDto,
-                update: courseInfoDto
-            });
-        } catch {}
-
+        //  Create an entry to add the course info if it does not exist and update it if it does.
+        const {bppId, bppUri, ...clone} = courseInfoDto;
+        const courseInfo = await this.prisma.courseInfo.upsert({
+            where: {
+                courseId_bppId: {
+                    courseId: courseInfoDto.courseId,
+                    bppId: courseInfoDto.bppId ?? COURSE_MANAGER_BPP_ID
+                }
+            },
+            create: {
+                ...clone,
+                bppId: courseInfoDto.bppId ?? COURSE_MANAGER_BPP_ID,
+                bppUri: courseInfoDto.bppUri ?? process.env.COURSE_MANAGER_URL!
+            },
+            update: courseInfoDto
+        });
         // Record transaction in marketplace metadata model
         await this.prisma.consumerCourseMetadata.create({
             data: {
                 consumerId,
-                courseId: courseInfoDto.courseId,
-                walletTransactionId: response.data.data.walletTransactionId,
-                becknTransactionId: 0, 
+                courseInfoId: courseInfo.id,
+                becknTransactionId: null, //  confirmResponse.data.data.transactionId,
+                becknMessageId: null, //  confirmResponse.data.data.messageId,
             }
         });
+    }
+
+    async reversePurchase(consumerId: string, courseIdDto: CourseIdDto) {
+        await this.getConsumer(consumerId);
+
+        const courseInfo = await this.prisma.courseInfo.findUnique({
+            where: {
+                courseId_bppId: {
+                    courseId: courseIdDto.courseId,
+                    bppId: courseIdDto.bppId ?? COURSE_MANAGER_BPP_ID
+                }
+            }
+        });
+        if(!courseInfo)
+            throw new NotFoundException("Course does not exist");
+
+        await this.prisma.consumerCourseMetadata.delete({
+            where: {
+                consumerId_courseInfoId: {
+                    consumerId,
+                    courseInfoId: courseInfo.id
+                }
+            }
+        });
+        // forward to wallet service for transaction
+        if(!process.env.WALLET_SERVICE_URL)
+            throw new HttpException("Wallet Service URI not defined", 500);
+        
+        const endpoint = `/api/consumers/${consumerId}/refund`;
+        const walletPurchaseBody = {
+            providerId: courseInfo.providerId,
+            credits: courseInfo.credits,
+            description: `Refund for course ${courseInfo.title}`
+        }
+        await axios.post(process.env.WALLET_SERVICE_URL + endpoint, walletPurchaseBody);
+    }
+
+    async getPurchaseStatus(consumerId: string, courseIdDto: CourseIdDto) {
+        const consumerCourse = await this.prisma.consumerCourseMetadata.findFirst({
+            where: {
+                consumerId,
+                CourseInfo: {
+                    courseId: courseIdDto.courseId,
+                    bppId: courseIdDto.bppId ?? COURSE_MANAGER_BPP_ID
+                }
+            }
+        });
+        if(!consumerCourse)
+            return false;
+
+        return true;
     }
 
     async getSavedCourses(consumerId: string): Promise<CourseInfoResponseDto[]> {
@@ -440,7 +539,7 @@ export class ConsumerService {
 
         const courses = await this.prisma.courseInfo.findMany({
             where: {
-                courseId: {
+                id: {
                     in: consumer.savedCourses
                 }
             },
@@ -464,7 +563,9 @@ export class ConsumerService {
                 providerName: course.providerName,
                 author: course.author,
                 avgRating: course.avgRating,
-                bppUrl: course.bppUrl,
+                bppUri: course.bppUri,
+                bppId: course.bppId,
+                providerId: course.providerId,
                 competency: course.competency,
                 courseId: course.courseId,
                 numberOfPurchases: course._count.ConsumerCourseMetadata,
@@ -513,17 +614,26 @@ export class ConsumerService {
         });
     }
 
-    async completeCourse(consumerId: string, courseId: number) {
+    async completeCourse(consumerId: string, courseIdDto: CourseIdDto) {
 
         await this.getConsumer(consumerId);
+        
+        const courseInfo = await this.prisma.courseInfo.findUnique({
+            where: {
+                courseId_bppId: {
+                    courseId: courseIdDto.courseId,
+                    bppId: courseIdDto.bppId ?? COURSE_MANAGER_BPP_ID
+                }
+            }
+        });
+        if(!courseInfo)
+            throw new NotFoundException("Course does not exist");
         try {
-            //`/update on BAP`
-
             await this.prisma.consumerCourseMetadata.update({
                 where: {
-                    consumerId_courseId: {
+                    consumerId_courseInfoId: {
                         consumerId,
-                        courseId
+                        courseInfoId: courseInfo.id
                     }
                 },
                 data: {

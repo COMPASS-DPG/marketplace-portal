@@ -36,24 +36,27 @@ model ConsumerMetadata {
 model ConsumerCourseMetadata {
   id                      Int                   @id @default(autoincrement())
   consumerId              String    
-  courseId                Int       
+  courseInfoId            Int       
+  becknTransactionId      String?                @unique
+  becknMessageId          String?                @unique
   status                  CourseProgressStatus  @default(IN_PROGRESS)
-  walletTransactionId     Int
-  becknTransactionId      Int
   rating                  Int?
   feedback                String?
   purchasedAt             DateTime              @default(now())
   completedAt             DateTime?              
   certificateCredentialId String?
-  CourseInfo              CourseInfo            @relation(fields: [courseId], references: [courseId])
+  CourseInfo              CourseInfo            @relation(fields: [courseInfoId], references: [id])
   ConsumerMetadata        ConsumerMetadata      @relation(fields: [consumerId], references: [consumerId])
 
-  @@unique([consumerId, courseId])
+  @@unique([consumerId, courseInfoId])
 }
 
 model CourseInfo {
-  courseId                Int                       @id
-  bppUrl                  String?
+  id                      Int                       @id @default(autoincrement())
+  courseId                String
+  providerId              String
+  bppId                   String
+  bppUri                  String
   title                   String
   description             String
   credits                 Int
@@ -65,11 +68,14 @@ model CourseInfo {
   avgRating               Float?
   competency              Json
   ConsumerCourseMetadata  ConsumerCourseMetadata[]
+
+  @@unique([courseId, bppId])
 }
 
 model Admin {
   id        String     @id @default(uuid()) 
   name      String  
+  image     String?
   email     String     @unique
   password  String
 }

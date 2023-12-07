@@ -1,4 +1,5 @@
 import { CourseProgressStatus, PrismaClient } from "@prisma/client"
+import { COURSE_MANAGER_BPP_ID } from "src/utils/constants";
 
 
 const prisma = new PrismaClient();
@@ -36,7 +37,7 @@ const main = async () => {
     });
     const courses = await prisma.courseInfo.createMany({
         data: [{
-            courseId: 1,
+            courseId: "123e4567-e89b-42d3-a456-556642440050",
             title: "NestJS Complete",
             courseLink: "https://www.udemy.com/course/nestjs-the-complete-developers-guide/",
             credits: 20,
@@ -44,7 +45,9 @@ const main = async () => {
             imageLink: "https://courses.nestjs.com/img/logo.svg",
             providerName: "Udemy",
             language: ["en"],
-            bppUrl: "xyz",
+            bppUri: process.env.COURSE_MANAGER_URL ?? "http://localhost:3000",
+            bppId: COURSE_MANAGER_BPP_ID,
+            providerId: "123e4567-e89b-42d3-a456-556642440011",
             avgRating: 4.5,
             author: "Stephen Grider",
             competency: {
@@ -53,7 +56,7 @@ const main = async () => {
                 "Backend engineering": ["Level1"]
             }
         }, {
-            courseId: 2,
+            courseId: "123e4567-e89b-42d3-a456-556642440051",
             title: "Graphic Design Masterclass",
             courseLink: "https://www.udemy.com/course/graphic-design-masterclass-everything-you-need-to-know/",
             credits: 25,
@@ -61,7 +64,9 @@ const main = async () => {
             imageLink: "https://www.unite.ai/wp-content/uploads/2023/05/emily-bernal-v9vII5gV8Lw-unsplash.jpg",
             providerName: "Udemy",
             language: ["en"],
-            bppUrl: "xyz",
+            bppUri: process.env.COURSE_MANAGER_URL ?? "http://localhost:3000",
+            bppId: COURSE_MANAGER_BPP_ID,
+            providerId: "123e4567-e89b-42d3-a456-556642440011",
             avgRating: 4.5,
             author: "Lindsay Marsh",
             competency: {
@@ -70,7 +75,7 @@ const main = async () => {
                 "Backend engineering": ["Level1"]
             }
         }, {
-            courseId: 3,
+            courseId: "123e4567-e89b-42d3-a456-556642440052",
             title: "Python for Data Science",
             courseLink: "https://www.udemy.com/course/python-for-data-science-and-machine-learning-bootcamp/",
             credits: 30,
@@ -78,7 +83,9 @@ const main = async () => {
             imageLink: "https://blog.imarticus.org/wp-content/uploads/2021/12/learn-Python-for-data-science.jpg",
             providerName: "Coursera",
             language: ["en"],
-            bppUrl: "xyz",
+            bppUri: process.env.COURSE_MANAGER_URL ?? "http://localhost:3000",
+            bppId: COURSE_MANAGER_BPP_ID,
+            providerId: "123e4567-e89b-42d3-a456-556642440011",
             author: "Jose Portilla",
             avgRating: 4.5,
             competency: {
@@ -90,30 +97,31 @@ const main = async () => {
     })
     const purchasedCourses = await prisma.consumerCourseMetadata.createMany({
         data: [{
-            courseId: 1,
+            courseInfoId: 1,
             consumerId: "123e4567-e89b-42d3-a456-556642440000",
-            walletTransactionId: 0,
-            becknTransactionId: 0
-        }, {
-            courseId: 2,
-            consumerId: "123e4567-e89b-42d3-a456-556642440001",
-            walletTransactionId: 0,
-            becknTransactionId: 0,
+            becknTransactionId: "123e4567-e89b-42d3-a456-556642440070",
             status: CourseProgressStatus.COMPLETED,
-
-        }, {
-            courseId: 1,
+            completedAt: new Date(),
+            rating: 4,
+        },{
+            courseInfoId: 2,
+            consumerId: "123e4567-e89b-42d3-a456-556642440000",
+            becknTransactionId: "123e4567-e89b-42d3-a456-556642440071",
+        },{
+            courseInfoId: 2,
             consumerId: "123e4567-e89b-42d3-a456-556642440001",
-            walletTransactionId: 0,
-            becknTransactionId: 0,
+            becknTransactionId: "123e4567-e89b-42d3-a456-556642440072",
+        }, {
+            courseInfoId: 1,
+            consumerId: "123e4567-e89b-42d3-a456-556642440001",
+            becknTransactionId: "123e4567-e89b-42d3-a456-556642440073",
             status: CourseProgressStatus.COMPLETED,
             rating: 4,
             feedback: "Great course"
         }, {
-            courseId: 3,
+            courseInfoId: 3,
             consumerId: "123e4567-e89b-42d3-a456-556642440001",
-            walletTransactionId: 0,
-            becknTransactionId: 0
+            becknTransactionId: "123e4567-e89b-42d3-a456-556642440074"
         }]
     })
     const notifs = await prisma.notification.createMany({

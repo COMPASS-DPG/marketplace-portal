@@ -9,7 +9,6 @@ export class CourseResponse {
     readonly courseLink: string;
     readonly imgLink: string;
     readonly credits: number;
-    readonly noOfLessons: number | null;
     readonly language: string[];
     readonly duration: number;
     readonly competency: JsonValue;
@@ -18,8 +17,15 @@ export class CourseResponse {
     readonly status: CourseStatus;
     readonly startDate: Date | null;
     readonly endDate: Date | null;
+    readonly bppId: string | null;
+    readonly bppUri: string | null;
 }
 
 export type CourseStatus = "ARCHIVED" | "UNARCHIVED";
 
 export type CourseVerificationStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+
+export class SaveStatusResDto {
+    readonly saved: boolean
+}
