@@ -646,7 +646,7 @@ export class ConsumerController {
     // Record course completion
     @ApiOperation({ summary: 'Record course completion' })
     @ApiResponse({ status: HttpStatus.OK })
-    @Patch("/:consumerId/course/:courseId/complete")
+    @Patch("/:consumerId/course/complete")
     async onCourseCompletion(
         @Param("consumerId", ParseUUIDPipe) consumerId: string,
         @Body() courseIdDto: CourseIdDto,
