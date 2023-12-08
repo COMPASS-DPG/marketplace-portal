@@ -73,11 +73,7 @@ model CourseInfo {
 }
 
 model Admin {
-  id        String     @id @default(uuid()) 
-  name      String  
-  image     String?
-  email     String     @unique
-  password  String
+  id        String     @id @db.Uuid
 }
 
 model Notification {

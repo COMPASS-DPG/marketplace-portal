@@ -13,15 +13,10 @@ export class AdminService {
         await this.getAdmin(adminId);
         return true;
     }
-
-    async login(email: string, password: string) {
-        const admin = await this.prisma.admin.findUnique({
-            where: { email: email, password: password }
+    async createAdmin(adminId: string) {
+        const admin = await this.prisma.admin.create({
+            data: { id: adminId }
         });
-        if (admin == null) {
-            throw new BadRequestException(`Invalid credentials`);
-        }
-        return admin.id;
     }
 
     async getAdmin(adminId: string) {

@@ -15,6 +15,35 @@ export class AdminController {
 
     constructor(private adminService: AdminService) { }
 
+    @ApiOperation({ summary: 'Record admin creation' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @Post("/:adminId")
+    // Record admin creation triggered by sign up in course manager
+    async createAdmin(
+        @Param("adminId", ParseUUIDPipe) adminId: string,
+        @Res() res
+    ) {
+        try {
+            this.logger.log(`Creating admin with id: ${adminId}`);
+
+            await this.adminService.createAdmin(adminId);
+
+            this.logger.log(`Admin created successfully`);
+
+            res.status(HttpStatus.OK).json({
+                message: "Admin creation successful",
+            });
+        } catch (err) {
+            this.logger.error(`Failed to create admin`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to create admin",
+            });
+        }
+    }
+    
     @ApiOperation({ summary: 'View all consumers on marketplace' })
     @ApiResponse({ status: HttpStatus.OK, type: [AdminConsumerDtoResponse], isArray: true })
     @Get("/:adminId/consumers")
