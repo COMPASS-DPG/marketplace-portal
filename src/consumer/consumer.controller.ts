@@ -500,13 +500,13 @@ export class ConsumerController {
         try {
             this.logger.log(`Checking course purchase status`);
 
-            const purchased = await this.consumerService.getPurchaseStatus(consumerId, courseIdDto);
+            const response = await this.consumerService.getPurchaseStatus(consumerId, courseIdDto);
 
             this.logger.log(`Purchase check successful`);
             
             res.status(HttpStatus.OK).json({
                 message: "purchase check successful",
-                purchased
+                data: response
             });
         } catch (err) {
             this.logger.error(`Purchase check failed`);

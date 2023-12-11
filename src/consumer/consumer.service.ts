@@ -1,7 +1,7 @@
 import { BadRequestException, HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ConsumerAccountDto } from './dto/account.dto';
-import { PurchasedCourseDto } from './dto/purchasedCourse.dto';
+import { PurchaseStatusDto, PurchasedCourseDto } from './dto/purchasedCourse.dto';
 import { CourseInfoDto, CourseInfoResponseDto } from './dto/courseInfo.dto';
 import { TransactionResponse } from './dto/transaction.dto';
 import { FeedbackDto, RatingRequestDto } from './dto/feedback.dto';
@@ -311,15 +311,15 @@ export class ConsumerService {
 
         if(consumerCourseData.CourseInfo.bppId != COURSE_MANAGER_BPP_ID) {
             // `/rating` to BAP
-            // const ratingEndpoint = `/`;
-            // const ratingBody: RatingRequestDto = {
-            //     courseId: consumerCourseData.CourseInfo.courseId,
-            //     rating: feedbackDto.rating,
-            //     bppId: consumerCourseData.CourseInfo.bppId,
-            //     bppUri: consumerCourseData.CourseInfo.bppUri
-            // }
+            const ratingEndpoint = `/courses/rating`;
+            const ratingBody: RatingRequestDto = {
+                courseId: consumerCourseData.CourseInfo.courseId,
+                rating: feedbackDto.rating,
+                bppId: consumerCourseData.CourseInfo.bppId,
+                bppUri: consumerCourseData.CourseInfo.bppUri
+            }
 
-            // await axios.post(process.env.BAP_URI + ratingEndpoint, ratingBody);
+            await axios.post(process.env.BAP_URI + ratingEndpoint, ratingBody);
         } else {
             // forward to course manager
             if(!process.env.COURSE_MANAGER_URL)
@@ -364,15 +364,13 @@ export class ConsumerService {
     async searchCourses(searchInput: string): Promise<SearchResponseDto> {
 
         // forward to BAP(`/search)
-        // if(!process.env.BAP_URI)
-        //     throw new HttpException("BAP URI not defined", 500);
+        if(!process.env.BAP_URI)
+            throw new HttpException("BAP URI not defined", 500);
         
-        // const searchEndpoint = `/search`;
-        // const searchBody = {
-        
-        // }
-        // const searchResponse = await axios.post(process.env.BAP_URI + searchEndpoint, searchBody);
-        // const messageId = searchResponse.data.data.messageId;
+        const searchEndpoint = `/courses/search?searchText=${searchInput}`;
+
+        const searchResponse = await axios.get(process.env.BAP_URI + searchEndpoint);
+        const messageId = searchResponse.data.messageId;
 
         // forward to course manager
         if(!process.env.COURSE_MANAGER_URL)
@@ -383,7 +381,7 @@ export class ConsumerService {
 
         return {
             courses: response.data.data,
-            messageId: ""
+            messageId
         }
     }
 
@@ -417,25 +415,26 @@ export class ConsumerService {
         if(credits < courseInfoDto.credits)
             throw new BadRequestException("Not enough credits");
 
-        if(courseInfoDto.bppId) {
+        let courseLink: string | undefined;
+        if(courseInfoDto.bppId && courseInfoDto.bppUri) {
             // fetch user details from user service
-            // const consumer = await this.getConsumerFromUserService(consumerId);
+            const consumer = await this.getConsumerFromUserService(consumerId);
 
             // `/confirm` to BAP
-            // const confirmEndpoint = `/`;
-            // const confirmBody: ConfirmDto = {
-            //     providerId: courseInfoDto.providerId,
-            //     courseId: consumerCourseData.CourseInfo.courseId,
-            //     amount: courseInfoDto.credits,
-            //     bppId: consumerCourseData.CourseInfo.bppId,
-            //     bppUri: consumerCourseData.CourseInfo.bppUri
-            //     applicantProfile: {
-            //          name: consumer.name,
-            //          email: consumer.email,
-            //          phone: consumer.phone
-            //      }
-            // }
-            // const confirmResponse = await axios.post(process.env.BAP_URI + confirmEndpoint, confirmBody);
+            const confirmEndpoint = `/courses/confirm`;
+            const confirmBody = {
+                providerId: courseInfoDto.providerId,
+                courseId: courseInfoDto.courseId,
+                amount: courseInfoDto.credits,
+                bppId: courseInfoDto.bppId,
+                bppUri: courseInfoDto.bppUri,
+                applicantProfile: {
+                    name: consumer.name,
+                    email: consumer.email,
+                    phone: consumer.phone
+                }
+            }
+            await axios.post(process.env.BAP_URI + confirmEndpoint, confirmBody);
         } else {
             // forward to course manager for purchase
             if(!process.env.COURSE_MANAGER_URL)
@@ -443,7 +442,8 @@ export class ConsumerService {
 
             const endpoint = `/api/course/${courseInfoDto.courseId}/purchase/${consumerId}`;
 
-            await axios.post(process.env.COURSE_MANAGER_URL + endpoint);
+            const purchaseResponse = await axios.post(process.env.COURSE_MANAGER_URL + endpoint);
+            courseLink = purchaseResponse.data.data.courseLink;
         }
 
         // forward to wallet service for transaction
@@ -467,9 +467,13 @@ export class ConsumerService {
             create: {
                 ...clone,
                 bppId: courseInfoDto.bppId ?? COURSE_MANAGER_BPP_ID,
-                bppUri: courseInfoDto.bppUri ?? process.env.COURSE_MANAGER_URL!
+                bppUri: courseInfoDto.bppUri ?? process.env.COURSE_MANAGER_URL!,
+                courseLink
             },
-            update: courseInfoDto
+            update: {
+                ...courseInfoDto,
+                courseLink
+            }
         });
         // Record transaction in marketplace metadata model
         await this.prisma.consumerCourseMetadata.create({
@@ -517,7 +521,7 @@ export class ConsumerService {
         await axios.post(process.env.WALLET_SERVICE_URL + endpoint, walletPurchaseBody);
     }
 
-    async getPurchaseStatus(consumerId: string, courseIdDto: CourseIdDto) {
+    async getPurchaseStatus(consumerId: string, courseIdDto: CourseIdDto): Promise<PurchaseStatusDto> {
         const consumerCourse = await this.prisma.consumerCourseMetadata.findFirst({
             where: {
                 consumerId,
@@ -525,12 +529,21 @@ export class ConsumerService {
                     courseId: courseIdDto.courseId,
                     bppId: courseIdDto.bppId ?? COURSE_MANAGER_BPP_ID
                 }
+            },
+            include: {
+                CourseInfo: true
             }
         });
         if(!consumerCourse)
-            return false;
+            return {
+                purchased: false,
+                courseLink: null
+            }
 
-        return true;
+        return {
+            purchased: true,
+            courseLink: consumerCourse.CourseInfo.courseLink
+        }
     }
 
     async getSavedCourses(consumerId: string): Promise<CourseInfoResponseDto[]> {
@@ -559,7 +572,6 @@ export class ConsumerService {
                 credits: course.credits,
                 imageLink: course.imageLink,
                 language: course.language,
-                courseLink: course.courseLink,
                 providerName: course.providerName,
                 author: course.author,
                 avgRating: course.avgRating,

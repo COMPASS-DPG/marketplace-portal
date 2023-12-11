@@ -1,5 +1,5 @@
 import { CourseProgressStatus } from "@prisma/client";
-import { CourseInfoResponseDto } from "./courseInfo.dto";
+import { PurchasedCourseInfoResponseDto } from "./courseInfo.dto";
 
 export class PurchasedCourseDto {
 
@@ -11,11 +11,12 @@ export class PurchasedCourseDto {
     readonly becknMessageId: string | null;
     readonly rating: number | null;
     readonly feedback: string | null;
-    readonly CourseInfo: CourseInfoResponseDto;
+    readonly CourseInfo: PurchasedCourseInfoResponseDto;
     readonly purchasedAt: Date;
     readonly completedAt: Date | null;
 }
 
 export class PurchaseStatusDto {
     readonly purchased: boolean
+    readonly courseLink: string | null
 }

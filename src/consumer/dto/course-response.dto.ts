@@ -6,8 +6,7 @@ export class CourseResponse {
     readonly providerId: string;
     readonly title: string;
     readonly description: string;
-    readonly courseLink: string;
-    readonly imgLink: string;
+    readonly imageLink: string;
     readonly credits: number;
     readonly language: string[];
     readonly duration: number;

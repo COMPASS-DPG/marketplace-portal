@@ -46,11 +46,6 @@ export class CourseInfoDto {
     @ArrayNotEmpty()
     language: string[];
     
-    // link for the course content
-    @IsNotEmpty()
-    @IsUrl()
-    courseLink: string;
-    
     // name of course provider
     @IsNotEmpty()
     @IsString()
@@ -88,11 +83,14 @@ export class CourseInfoResponseDto {
     readonly credits: number;
     readonly imageLink: string;
     readonly language: string[];
-    readonly courseLink: string;
     readonly providerName: string;
     readonly author: string;
     readonly avgRating: number | null;
     readonly competency: JsonValue;
     readonly providerId: string;
     readonly numberOfPurchases?: number;
+}
+
+export class PurchasedCourseInfoResponseDto extends CourseInfoResponseDto { 
+    readonly courseLink: string | null;
 }

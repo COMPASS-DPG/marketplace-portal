@@ -37,8 +37,8 @@ model ConsumerCourseMetadata {
   id                      Int                   @id @default(autoincrement())
   consumerId              String    
   courseInfoId            Int       
-  becknTransactionId      String?                @unique
-  becknMessageId          String?                @unique
+  becknTransactionId      String?               @unique
+  becknMessageId          String?               @unique
   status                  CourseProgressStatus  @default(IN_PROGRESS)
   rating                  Int?
   feedback                String?
@@ -62,7 +62,7 @@ model CourseInfo {
   credits                 Int
   imageLink               String
   language                String[]
-  courseLink              String
+  courseLink              String?
   providerName            String
   author                  String
   avgRating               Float?
