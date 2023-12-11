@@ -15,25 +15,26 @@ const main = async () => {
 
     const consumers = await prisma.consumerMetadata.createMany({
         data: [{
-            consumerId: "123e4567-e89b-42d3-a456-556642440000",
-            email: "abc0@gmail.com",
+            consumerId: "4d45a9e9-4a4d-4c92-aaea-7b5abbd6ff98",
+            email: "neha.patil@example.com",
             phoneNumber: "9999999990"
         }, {
-            consumerId: "123e4567-e89b-42d3-a456-556642440001",
-            email: "abc1@gmail.com",
+            consumerId: "abaa7220-5d2e-4e05-842a-95b2c4ce1876",
+            email: "rajesh.kumar@example.com",
             phoneNumber: "9999999991"
         }, {
-            consumerId: "123e4567-e89b-42d3-a456-556642440002",
-            email: "abc2@gmail.com",
+            consumerId: "0f5d0b13-8d72-46c9-a7c4-c1f7e5aa1f17",
+            email: "priya.jain@example.com",
             phoneNumber: "9999999992"
         }, {
-            consumerId: "123e4567-e89b-42d3-a456-556642440003",
-            email: "abc3@gmail.com",
+            consumerId: "bbf1f7cf-4216-458e-8d98-0d9204ae57ef",
+            email: "arjun.singh@example.com",
             phoneNumber: "9999999993"
         }]
     });
     const courses = await prisma.courseInfo.createMany({
         data: [{
+            id: 1,
             courseId: "123e4567-e89b-42d3-a456-556642440050",
             title: "NestJS Complete",
             courseLink: "https://www.udemy.com/course/nestjs-the-complete-developers-guide/",
@@ -53,6 +54,7 @@ const main = async () => {
                 "Backend engineering": ["Level1"]
             }
         }, {
+            id: 2,
             courseId: "123e4567-e89b-42d3-a456-556642440051",
             title: "Graphic Design Masterclass",
             courseLink: "https://www.udemy.com/course/graphic-design-masterclass-everything-you-need-to-know/",
@@ -72,6 +74,7 @@ const main = async () => {
                 "Backend engineering": ["Level1"]
             }
         }, {
+            id: 3,
             courseId: "123e4567-e89b-42d3-a456-556642440052",
             title: "Python for Data Science",
             courseLink: "https://www.udemy.com/course/python-for-data-science-and-machine-learning-bootcamp/",
@@ -95,37 +98,37 @@ const main = async () => {
     const purchasedCourses = await prisma.consumerCourseMetadata.createMany({
         data: [{
             courseInfoId: 1,
-            consumerId: "123e4567-e89b-42d3-a456-556642440000",
+            consumerId: "4d45a9e9-4a4d-4c92-aaea-7b5abbd6ff98",
             becknTransactionId: "123e4567-e89b-42d3-a456-556642440070",
             status: CourseProgressStatus.COMPLETED,
             completedAt: new Date(),
             rating: 4,
         },{
             courseInfoId: 2,
-            consumerId: "123e4567-e89b-42d3-a456-556642440000",
+            consumerId: "4d45a9e9-4a4d-4c92-aaea-7b5abbd6ff98",
             becknTransactionId: "123e4567-e89b-42d3-a456-556642440071",
             status: CourseProgressStatus.COMPLETED,
             completedAt: new Date(),
         },{
             courseInfoId: 2,
-            consumerId: "123e4567-e89b-42d3-a456-556642440001",
+            consumerId: "abaa7220-5d2e-4e05-842a-95b2c4ce1876",
             becknTransactionId: "123e4567-e89b-42d3-a456-556642440072",
         }, {
             courseInfoId: 1,
-            consumerId: "123e4567-e89b-42d3-a456-556642440001",
+            consumerId: "abaa7220-5d2e-4e05-842a-95b2c4ce1876",
             becknTransactionId: "123e4567-e89b-42d3-a456-556642440073",
             status: CourseProgressStatus.COMPLETED,
             rating: 4,
             feedback: "Great course"
         }, {
             courseInfoId: 3,
-            consumerId: "123e4567-e89b-42d3-a456-556642440001",
+            consumerId: "abaa7220-5d2e-4e05-842a-95b2c4ce1876",
             becknTransactionId: "123e4567-e89b-42d3-a456-556642440074"
         }]
     })
     const notifs = await prisma.notification.createMany({
         data: [{
-            consumerId: "123e4567-e89b-42d3-a456-556642440000",
+            consumerId: "4d45a9e9-4a4d-4c92-aaea-7b5abbd6ff98",
             link: "/",
             text: "",
         }]
