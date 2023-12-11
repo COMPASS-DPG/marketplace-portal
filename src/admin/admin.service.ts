@@ -53,7 +53,8 @@ export class AdminService {
         userResponse.data.data.forEach((user) => {
             usersMap[user.id] = {
                 name: user.userName,
-                role: user.designation
+                role: user.designation,
+                profilePicture: user.profilePicture
             }
         });
         
@@ -75,7 +76,8 @@ export class AdminService {
                 numCoursesPurchased: c._count.ConsumerCourseMetadata,
                 credits: creditsMap[c.consumerId],
                 name: usersMap[c.consumerId].name,
-                role: usersMap[c.consumerId].role
+                role: usersMap[c.consumerId].role,
+                profilePicture: usersMap[c.consumerId].profilePicture
             }
         })
     }

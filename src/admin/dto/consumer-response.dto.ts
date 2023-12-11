@@ -8,6 +8,7 @@ export class AdminConsumerDtoResponse {
   readonly consumerId: string;
   readonly name?: string;
   readonly role?: string;
+  readonly profilePicture?: string;
   readonly numCoursesPurchased: number;
   readonly credits: number;
 }
