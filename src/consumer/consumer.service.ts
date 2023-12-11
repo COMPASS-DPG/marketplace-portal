@@ -78,10 +78,13 @@ export class ConsumerService {
         credits = response.data.data.credits;
 
         // forward to user service
-
+        const consumerResponse = await this.getConsumerFromUserService(consumerId);
 
         return {
             consumerId,
+            name: consumerResponse.name,
+            designation: consumerResponse.designation,
+            profilePicture: consumerResponse.profilePicture,
             emailId: consumer.email,
             phoneNumber: consumer.phoneNumber,
             createdAt: consumer.createdAt,
@@ -387,7 +390,7 @@ export class ConsumerService {
 
     async purchaseCourse(consumerId: string, courseInfoDto: CourseInfoDto) {
 
-        await this.getConsumer(consumerId);
+        const consumer = await this.getConsumer(consumerId);
 
         const consumerCourseData = await this.prisma.consumerCourseMetadata.findFirst({
             where: {
@@ -418,9 +421,11 @@ export class ConsumerService {
         let courseLink: string | undefined;
         if(courseInfoDto.bppId && courseInfoDto.bppUri) {
             // fetch user details from user service
-            const consumer = await this.getConsumerFromUserService(consumerId);
+            const consumerResponse = await this.getConsumerFromUserService(consumerId);
 
             // `/confirm` to BAP
+            if(!process.env.BAP_URI)
+                throw new HttpException("BAP URI not defined", 500);
             const confirmEndpoint = `/courses/confirm`;
             const confirmBody = {
                 providerId: courseInfoDto.providerId,
@@ -429,9 +434,9 @@ export class ConsumerService {
                 bppId: courseInfoDto.bppId,
                 bppUri: courseInfoDto.bppUri,
                 applicantProfile: {
-                    name: consumer.name,
-                    email: consumer.email,
-                    phone: consumer.phone
+                    name: consumerResponse.name,
+                    email: consumerResponse.email,
+                    phone: consumer.phoneNumber
                 }
             }
             await axios.post(process.env.BAP_URI + confirmEndpoint, confirmBody);
