@@ -1,13 +1,15 @@
-NODE_ENV=development
-APP_PORT=4000
-APP_NAME="Service API"
+NODE_ENV=production
+APP_PORT=4020
+APP_NAME="Marketplace API"
 API_PREFIX=api
 
-DATABASE_USERNAME=
-DATABASE_PASSWORD=
-DATABASE_NAME=
+
+DATABASE_USERNAME=postgres
+DATABASE_PASSWORD=secret
+DATABASE_NAME=marketplace-db
 DATABASE_PORT=5432
-DATABASE_URL=
-WALLET_SERVICE_URL=http://localhost:3000
-REQUEST_SERVICE_URL=
-BAP_URL=
+DATABASE_URL="postgresql://postgres:secret@postgres:5432/marketplace-db?sslmode=prefer"
+WALLET_SERVICE_URL=http://localhost:4022
+REQUEST_SERVICE_URL=http://localhost:4023
+BAP_URL=https://bap.compass.samagra.io
+
