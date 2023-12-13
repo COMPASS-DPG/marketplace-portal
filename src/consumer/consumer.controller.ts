@@ -396,6 +396,39 @@ export class ConsumerController {
         }
     }
 
+    // Get a list of the most popular courses
+    @ApiOperation({ summary: 'Get most popular courses' })
+    @ApiResponse({ status: HttpStatus.OK, type: [CourseResponse] })
+    @Get("/course/popular")
+    async getMostPopularCourses(
+        @Query('limit') limit: number,
+        @Query('offset') offset: number,
+        @Res() res
+    ) {
+        try {
+            this.logger.log(`Fetching most popular courses`);
+
+            const response = await this.consumerService.mostPopularCourses(limit, offset);
+
+            this.logger.log(`Successfully fetched the courses`);
+            
+            res.status(HttpStatus.OK).json({
+                message: "fetch successful",
+                data: {
+                    response
+                }
+            });
+        } catch (err) {
+            this.logger.error(`Failed to fetch courses`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to fetch courses",
+            });
+        }
+    }
+
     // Select/View course information
     @ApiOperation({ summary: 'View course information' })
     @ApiResponse({ status: HttpStatus.OK, type: CourseResponse })

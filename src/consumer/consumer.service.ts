@@ -1,4 +1,4 @@
-import { BadRequestException, HttpException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ConsumerAccountDto } from './dto/account.dto';
 import { PurchaseStatusDto, PurchasedCourseDto } from './dto/purchasedCourse.dto';
@@ -14,9 +14,12 @@ import { CourseResponse } from './dto/course-response.dto';
 import { COURSE_MANAGER_BPP_ID } from 'src/utils/constants';
 import { SearchResponseDto } from './dto/search-response.dto';
 import { CourseIdDto } from './dto/course-id.dto';
+import { getPrismaErrorStatusAndMessage } from 'src/utils/utils';
 
 @Injectable()
 export class ConsumerService {
+    private readonly logger = new Logger(ConsumerService.name);
+
     constructor(
         private prisma: PrismaService
     ) {}
@@ -256,7 +259,8 @@ export class ConsumerService {
                     select: {
                         bppId: true,
                         bppUri: true,
-                        courseId: true
+                        courseId: true,
+                        competency: true
                     }
                 }
             }
@@ -266,13 +270,6 @@ export class ConsumerService {
         
         if(consumerCourseData.status != CourseProgressStatus.COMPLETED)
             throw new BadRequestException("User has not completed the course");
-
-        // forward to Credential MS to issue certificate
-        if(!process.env.CREDENTIAL_SERVICE_URL)
-            throw new HttpException("Credential Service URL not defined", 500);
-        
-        // forward to passbook to save certificate
-        
 
         if(consumerCourseData.CourseInfo.bppId != COURSE_MANAGER_BPP_ID) {
             // `/rating` to BAP
@@ -296,6 +293,57 @@ export class ConsumerService {
             }
             await axios.patch(process.env.COURSE_MANAGER_URL + endpoint, feedbackBody);
         }
+
+        const competencyMap = {};
+
+        // fetch all competencies
+        if(process.env.USER_SERVICE_URL) {
+
+            let endpoint = `/api/mockFracService/competency`;
+            try {
+                const competencyResponse = await axios.get(process.env.USER_SERVICE_URL + endpoint);
+                const competency = competencyResponse.data.data;
+                competency.map((c) => {
+                    competencyMap[c.name] = c.id;
+                });
+            } catch(err) {
+                const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+                this.logger.error(`Error while fetching competencies`);
+                this.logger.error(`Error ${statusCode}: ${errorMessage}`);
+            }
+        }
+
+        // forward to passbook to save certificate
+        if(!process.env.PASSBOOK_SERVICE_URL)
+            throw new HttpException("Passbook Service URL not defined", 500);
+
+        const endpoint = `/api/user/assessment`;
+
+        const competencies = (typeof consumerCourseData.CourseInfo.competency == "string") 
+            ? JSON.parse(consumerCourseData.CourseInfo.competency) 
+            : consumerCourseData.CourseInfo.competency;
+        consumerCourseData.CourseInfo.competency
+        console.log(competencies);
+
+        for(const competency in competencies) {
+            const levels = competencies[competency];
+            for(const level of levels) {
+                const addAssessmentBody = {
+                    userId: "1246", // consumerId,
+                    competencyId: competencyMap[competency] ?? 0,
+                    competency: competency,
+                    levelNumber: (typeof level == "number") ? level : 1,
+                    type: "CBP",
+                    score: "100",
+                    certificateId: consumerCourseData.certificateCredentialId,
+                    dateOfIssuance: new Date().toISOString()
+                }
+                console.log(addAssessmentBody);
+                const response = await axios.post(process.env.PASSBOOK_SERVICE_URL + endpoint, addAssessmentBody);
+                console.log(response.data);
+            }
+        }
+
         // update marketplace metadata model
         await this.prisma.consumerCourseMetadata.update({
             where: {
@@ -304,7 +352,6 @@ export class ConsumerService {
             data: {
                 rating: feedbackDto.rating,
                 feedback: feedbackDto.feedback,
-                // certificateCredentialId: credentialId
             }
         });
     }
@@ -627,10 +674,10 @@ export class ConsumerService {
                 "type": [
                     "VerifiableCredential"
                 ],
-                "issuer": ${process.env.CREDENTIAL_ISSUER_DID},
+                "issuer": "${process.env.CREDENTIAL_ISSUER_DID}",
                 "expirationDate": "${new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 10).toISOString()}",
                 "credentialSubject": {
-                    "id": ${process.env.CREDENTIAL_SCHEMA_DID},
+                    "id": "${process.env.CREDENTIAL_SCHEMA_DID}",
                     "completionScore": 100,
                     "courseName": "${courseInfo.title}",
                     "courseProvider": "${courseInfo.providerName}",
@@ -645,14 +692,13 @@ export class ConsumerService {
                     }
                 }
             },
-            "credentialSchemaId": ${process.env.CREDENTIAL_SCHEMA_DID},
-            "credentialSchemaVersion": ${process.env.CREDENTIAL_SCHEMA_VERSION},
+            "credentialSchemaId": "${process.env.CREDENTIAL_SCHEMA_DID}",
+            "credentialSchemaVersion":"${process.env.CREDENTIAL_SCHEMA_VERSION}",
             "tags": ["courseCompletionCredential"]
         }`
         const response = await axios.post(process.env.CREDENTIAL_SERVICE_URL + endpoint, JSON.parse(requestDto));
 
-
-        console.log(response.data)
+        // console.log(response.data)
         const credentialId = response.data.credential.id;
 
         await this.prisma.consumerCourseMetadata.update({
@@ -683,5 +729,17 @@ export class ConsumerService {
         const endpoint = `/api/requests/`;
         const response = await axios.post(process.env.REQUEST_SERVICE_URL + endpoint, createRequestDto);
         return response;
+    }
+
+    async mostPopularCourses(limit?: number, offset?: number): Promise<CourseResponse> {
+
+        if(!process.env.COURSE_MANAGER_URL)
+            throw new HttpException("Course manager URL not defined", 500);
+
+        const endpoint = `/api/course/popular`;
+        const queryParams = `?limit=${limit}&offset=${offset}`;
+        
+        const response = await axios.get(process.env.COURSE_MANAGER_URL + endpoint + queryParams);
+        return response.data.data;
     }
 }
