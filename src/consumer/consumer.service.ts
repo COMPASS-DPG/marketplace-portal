@@ -37,7 +37,7 @@ export class ConsumerService {
         if(!process.env.USER_SERVICE_URL)
             throw new HttpException("User Service URL not defined", 500);
 
-        const endpoint = `/api/users/${consumerId}`;
+        const endpoint = `/api/mockFracService/user/${consumerId}`;
         const response = await axios.get(process.env.USER_SERVICE_URL + endpoint);
         const consumer = response.data.data;
         if(!consumer)
@@ -268,49 +268,11 @@ export class ConsumerService {
             throw new BadRequestException("User has not completed the course");
 
         // forward to Credential MS to issue certificate
-        // if(!process.env.CREDENTIAL_SERVICE_URL)
-        //     throw new HttpException("Credential Service URL not defined", 500);
+        if(!process.env.CREDENTIAL_SERVICE_URL)
+            throw new HttpException("Credential Service URL not defined", 500);
         
-        // let endpoint = `/credentials/issue`;
-        
-        // const requestDto = JSON.parse(`{
-        //     "credential": {
-        //         "@context": [
-        //             "https://www.w3.org/2018/credentials/v1",
-        //             "https://www.w3.org/2018/credentials/examples/v1"
-        //         ],
-        //         "type": [
-        //             "VerifiableCredential",
-        //             "UniversityDegreeCredential"
-        //         ],
-        //         "issuer": "did:rcw:6b9d7b31-bc7f-454a-be30-b6c7447b1cff",
-        //         "issuanceDate": "2023-02-06T11:56:27.259Z",
-        //         "expirationDate": "2023-02-08T11:56:27.259Z",
-        //         "credentialSubject": {
-        //             "id": "did:rcw:6b9d7b31-bc7f-454a-be30-b6c7447b1cff",
-        //             "grade": "9.23",
-        //             "programme": "B.Tech",
-        //             "certifyingInstitute": "IIIT Sonepat",
-        //             "evaluatingInstitute": "NIT Kurukshetra"
-        //         },
-        //         "options": {
-        //             "created": "2020-04-02T18:48:36Z",
-        //             "credentialStatus": {
-        //                 "type": "RevocationList2020Status"
-        //             }
-        //         }
-        //     },
-        //     "credentialSchemaId": "did:schema:b22f7835-0255-412b-8663-d1131c48aa66",
-        //     "credentialSchemaVersion": "3.0.0",
-        //     "tags": ["tag1", "tag2", "tag3"],
-        //     "method": "cbse"
-        // }`)
-
-        // const response = await axios.post(process.env.CREDENTIAL_SERVICE_URL + endpoint, requestDto);
-
-        // const credentialId = response.data.data.credential.id;
-
         // forward to passbook to save certificate
+        
 
         if(consumerCourseData.CourseInfo.bppId != COURSE_MANAGER_BPP_ID) {
             // `/rating` to BAP
@@ -645,22 +607,67 @@ export class ConsumerService {
         });
         if(!courseInfo)
             throw new NotFoundException("Course does not exist");
-        try {
-            await this.prisma.consumerCourseMetadata.update({
-                where: {
-                    consumerId_courseInfoId: {
-                        consumerId,
-                        courseInfoId: courseInfo.id
-                    }
+
+        const consumer = await this.getConsumerFromUserService(consumerId);
+
+        // forward to Credential MS to issue certificate
+        if(!process.env.CREDENTIAL_SERVICE_URL)
+            throw new HttpException("Credential Service URL not defined", 500);
+        
+        let endpoint = `/credentials/issue`;
+        
+        const competency = JSON.stringify(courseInfo.competency);
+
+        const requestDto = `{
+            "credential": {
+                "@context": [
+                    "https://www.w3.org/2018/credentials/v1",
+                    "https://www.w3.org/2018/credentials/examples/v1"
+                ],
+                "type": [
+                    "VerifiableCredential"
+                ],
+                "issuer": ${process.env.CREDENTIAL_ISSUER_DID},
+                "expirationDate": "${new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 10).toISOString()}",
+                "credentialSubject": {
+                    "id": ${process.env.CREDENTIAL_SCHEMA_DID},
+                    "completionScore": 100,
+                    "courseName": "${courseInfo.title}",
+                    "courseProvider": "${courseInfo.providerName}",
+                    "username": "${consumer.userName}",
+                    "competency": ${competency},
+                    "courseCompletionDate": "${new Date().toISOString()}"
                 },
-                data: {
-                    status: CourseProgressStatus.COMPLETED,
-                    completedAt: new Date()
+                "options": {
+                    "created": "2020-04-02T18:48:36Z",
+                    "credentialStatus": {
+                        "type": "RevocationList2020Status"
+                    }
                 }
-            });
-        } catch {
-            throw new NotFoundException("This user has not subscribed to this course");
-        }
+            },
+            "credentialSchemaId": ${process.env.CREDENTIAL_SCHEMA_DID},
+            "credentialSchemaVersion": ${process.env.CREDENTIAL_SCHEMA_VERSION},
+            "tags": ["courseCompletionCredential"]
+        }`
+        const response = await axios.post(process.env.CREDENTIAL_SERVICE_URL + endpoint, JSON.parse(requestDto));
+
+
+        console.log(response.data)
+        const credentialId = response.data.credential.id;
+
+        await this.prisma.consumerCourseMetadata.update({
+            where: {
+                consumerId_courseInfoId: {
+                    consumerId,
+                    courseInfoId: courseInfo.id
+                }
+            },
+            data: {
+                status: CourseProgressStatus.COMPLETED,
+                completedAt: new Date(),
+                certificateCredentialId: credentialId
+            },
+        });
     }
 
     async requestCredits(consumerId: string, requestDto: RequestDto) {

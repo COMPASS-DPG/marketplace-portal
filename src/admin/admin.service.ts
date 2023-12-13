@@ -47,7 +47,6 @@ export class AdminService {
         let url = process.env.USER_SERVICE_URL + endpoint;
 
         const userResponse = await axios.get(url);
-        console.log(userResponse.data.data);
 
         const usersMap = {};
         userResponse.data.data.forEach((user) => {
