@@ -737,8 +737,6 @@ export class ConsumerService {
         });
         if (!courseInfo) throw new NotFoundException("Course does not exist");
     
-        const consumer = await this.getConsumerFromUserService(consumerId);
-    
         // forward to Credential MS to issue certificate
         if (!process.env.CREDENTIAL_SERVICE_URL)
           throw new HttpException("Credential Service URL not defined", 500);
