@@ -15,6 +15,7 @@ import { COURSE_MANAGER_BPP_ID } from 'src/utils/constants';
 import { SearchResponseDto } from './dto/search-response.dto';
 import { CourseIdDto } from './dto/course-id.dto';
 import { getPrismaErrorStatusAndMessage } from 'src/utils/utils';
+import { MOCK_FRAC_DATA } from 'src/mockData/frac';
 
 @Injectable()
 export class ConsumerService {
@@ -745,23 +746,24 @@ export class ConsumerService {
     async recommendedCourses(consumerId: string): Promise<CourseResponse> {
 
         // Define the URL of the API endpoint
-        const apiUrl = 'https://test-compass.free.beeceptor.com/frac/getrole';
+        // const apiUrl = 'https://test-compass.free.beeceptor.com/frac/getrole';
 
-        let response = await axios.get(apiUrl);
+        // let response = await axios.get(apiUrl);
 
         if(!process.env.COURSE_MANAGER_URL)
             throw new HttpException("Course manager URL not defined", 500);
 
         const endpoint = `/api/course/recommended`;
         let queryParams = `?`;
-        response.data.roles.forEach((role) => {
+        MOCK_FRAC_DATA.roles.forEach((role) => {
             role.competency.forEach((competency) => {
                 queryParams += `competencies=${competency.name}&`;
             });
         })
         queryParams = queryParams.slice(0, -1);
-        
-        response = await axios.get(process.env.COURSE_MANAGER_URL + endpoint + queryParams);
+
+        const response = await axios.get(process.env.COURSE_MANAGER_URL + endpoint + queryParams);
+
         return response.data.data;
     }
 }
