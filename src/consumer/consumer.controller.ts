@@ -3,7 +3,7 @@ import { ConsumerService } from "./consumer.service";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ConsumerAccountDto, CreditsDto } from "./dto/account.dto";
 import { PurchaseStatusDto, PurchasedCourseDto } from "./dto/purchasedCourse.dto";
-import { CourseInfoDto, CourseInfoResponseDto, UpdatePurchasedCourseConfirmationDto } from "./dto/courseInfo.dto";
+import { CourseInfoDto, CourseInfoResponseDto, OrderConfirmationDto, } from "./dto/courseInfo.dto";
 import { TransactionResponse } from "./dto/transaction.dto";
 import { FeedbackDto } from "./dto/feedback.dto";
 import { CreateNotificationDto, NotificationResponseDto } from "./dto/notification.dto";
@@ -529,9 +529,7 @@ export class ConsumerController {
   @Patch("course/update-purchase/confirm")
   async updatePurchasedCourseOnConfirm(
     @Body()
-    updatePurchasedCourseConfirmationDto:
-      | any
-      | UpdatePurchasedCourseConfirmationDto,
+    updatePurchasedCourseConfirmationDto: OrderConfirmationDto,
     @Res() res
   ) {
     try {
@@ -750,16 +748,15 @@ export class ConsumerController {
     // Record course completion
     @ApiOperation({ summary: 'Record course completion' })
     @ApiResponse({ status: HttpStatus.OK })
-    @Patch("/:consumerId/course/complete")
+    @Patch("course/complete")
     async onCourseCompletion(
-        @Param("consumerId", ParseUUIDPipe) consumerId: string,
-        @Body() courseIdDto: CourseIdDto,
+        @Body() orderConfirmationDto: OrderConfirmationDto,
         @Res() res
     ) {
         try {
             this.logger.log(`Recording completion of a course`);
 
-            await this.consumerService.completeCourse(consumerId, courseIdDto);
+            await this.consumerService.completeCourse(orderConfirmationDto);
 
             this.logger.log(`Course completion recorded successfully`);
             
@@ -767,7 +764,7 @@ export class ConsumerController {
                 message: "course completion successful",
             });
         } catch (err) {
-            this.logger.error(`Failed to record course completion`);
+            this.logger.error(`Failed to record course completion`,err);
 
             const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
             res.status(statusCode).json({

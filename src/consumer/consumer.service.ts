@@ -2,7 +2,7 @@ import { BadRequestException, HttpException, Injectable, Logger, NotFoundExcepti
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ConsumerAccountDto } from './dto/account.dto';
 import { PurchaseStatusDto, PurchasedCourseDto } from './dto/purchasedCourse.dto';
-import { CourseInfoDto, CourseInfoResponseDto, UpdatePurchasedCourseConfirmationDto } from './dto/courseInfo.dto';
+import { CourseInfoDto, CourseInfoResponseDto, OrderConfirmationDto } from './dto/courseInfo.dto';
 import { TransactionResponse } from './dto/transaction.dto';
 import { FeedbackDto, RatingRequestDto } from './dto/feedback.dto';
 import { CreateNotificationDto, NotificationResponseDto } from './dto/notification.dto';
@@ -500,7 +500,7 @@ export class ConsumerService {
     }
 
     async updatePurchasedCourseOnConfirm(
-      updatePurchasedCourseConfirmationDto: UpdatePurchasedCourseConfirmationDto
+      updatePurchasedCourseConfirmationDto: OrderConfirmationDto
     ) {
       const {
         bppId,
@@ -510,14 +510,38 @@ export class ConsumerService {
         courseName
       } = updatePurchasedCourseConfirmationDto;
   
+      await this.validatePurchasedCourseAndUser(
+        customer.email,
+        courseId,
+        bppId,
+        courseName,
+        customer.name
+      );
+  
+      return await this.prisma.courseInfo.update({
+        where: {
+          courseId_bppId: {
+            bppId,
+            courseId,
+          },
+        },
+        data: { courseLink },
+      });
+    }
+  
+    async validatePurchasedCourseAndUser(
+      email: string,
+      courseId: string,
+      bppId: string,
+      courseName: string = "",
+      name: string = ""
+    ): Promise<boolean> {
       const user = await this.prisma.consumerMetadata.findUnique({
-        where: { email: customer.email },
+        where: { email: email },
       });
   
       if (!user) {
-        throw new NotFoundException(
-          `User with email:- ${customer.email} not found`
-        );
+        throw new NotFoundException(`User with email:- ${email} not found`);
       }
   
       const consumerCourseData =
@@ -532,19 +556,14 @@ export class ConsumerService {
         });
   
       if (!consumerCourseData)
-        throw new BadRequestException(`Course ${courseName?? `:- ${courseName}`} not purchased by user ${customer.name?? `:- ${customer.name}`} with email:- ${customer.email}`);
-  
-      return await this.prisma.courseInfo.update({
-        where: {
-          courseId_bppId: {
-            bppId,
-            courseId,
-          },
-        },
-        data: { courseLink },
-      });
-    }
-  
+        throw new BadRequestException(
+          `Course ${courseName ?? `:- ${courseName}`} not purchased by user ${
+            name ?? `:- ${name}`
+          } with email:- ${email}`
+        );
+
+      return true;
+    }  
 
     async reversePurchase(consumerId: string, courseIdDto: CourseIdDto) {
         await this.getConsumer(consumerId);
@@ -686,81 +705,104 @@ export class ConsumerService {
         });
     }
 
-    async completeCourse(consumerId: string, courseIdDto: CourseIdDto) {
-
-        await this.getConsumer(consumerId);
-        
+    async completeCourse(orderConfirmationDto: OrderConfirmationDto) {
+        const {
+          bppId,
+          providerCourseId: courseId,
+          customer,
+          courseName,
+        } = orderConfirmationDto;
+    
+        await this.validatePurchasedCourseAndUser(
+          customer.email,
+          courseId,
+          bppId,
+          courseName,
+          customer.name
+        );
+    
+        const user = await this.prisma.consumerMetadata.findUnique({
+          where: { email: customer.email },
+        });
+        const consumerId = user?.consumerId || "";
+    
         const courseInfo = await this.prisma.courseInfo.findUnique({
-            where: {
-                courseId_bppId: {
-                    courseId: courseIdDto.courseId,
-                    bppId: courseIdDto.bppId ?? COURSE_MANAGER_BPP_ID
-                }
-            }
+          where: {
+            courseId_bppId: {
+              courseId,
+              bppId: bppId ?? COURSE_MANAGER_BPP_ID,
+            },
+          },
         });
-        if(!courseInfo)
-            throw new NotFoundException("Course does not exist");
-
+        if (!courseInfo) throw new NotFoundException("Course does not exist");
+    
         const consumer = await this.getConsumerFromUserService(consumerId);
-
+    
         // forward to Credential MS to issue certificate
-        if(!process.env.CREDENTIAL_SERVICE_URL)
-            throw new HttpException("Credential Service URL not defined", 500);
-        
+        if (!process.env.CREDENTIAL_SERVICE_URL)
+          throw new HttpException("Credential Service URL not defined", 500);
+    
         let endpoint = `/credentials/issue`;
-        
+    
         const competency = JSON.stringify(courseInfo.competency);
-
+    
         const requestDto = `{
-            "credential": {
-                "@context": [
-                    "https://www.w3.org/2018/credentials/v1",
-                    "https://www.w3.org/2018/credentials/examples/v1"
-                ],
-                "type": [
-                    "VerifiableCredential"
-                ],
-                "issuer": "${process.env.CREDENTIAL_ISSUER_DID}",
-                "expirationDate": "${new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 10).toISOString()}",
-                "credentialSubject": {
-                    "id": "${process.env.CREDENTIAL_SCHEMA_DID}",
-                    "completionScore": 100,
-                    "courseName": "${courseInfo.title}",
-                    "courseProvider": "${courseInfo.providerName}",
-                    "username": "${consumer.userName}",
-                    "competency": ${competency},
-                    "courseCompletionDate": "${new Date().toISOString()}"
-                },
-                "options": {
-                    "created": "2020-04-02T18:48:36Z",
-                    "credentialStatus": {
-                        "type": "RevocationList2020Status"
+                "credential": {
+                    "@context": [
+                        "https://www.w3.org/2018/credentials/v1",
+                        "https://www.w3.org/2018/credentials/examples/v1"
+                    ],
+                    "type": [
+                        "VerifiableCredential"
+                    ],
+                    "issuer": "${process.env.CREDENTIAL_ISSUER_DID}",
+                    "expirationDate": "${new Date(
+                      Date.now() + 1000 * 60 * 60 * 24 * 365 * 10
+                    ).toISOString()}",
+                    "credentialSubject": {
+                        "id": "${process.env.CREDENTIAL_SCHEMA_DID}",
+                        "completionScore": 100,
+                        "courseName": "${courseInfo.title}",
+                        "courseProvider": "${courseInfo.providerName}",
+                        "username": "${customer.name}",
+                        "competency": ${competency},
+                        "courseCompletionDate": "${new Date().toISOString()}"
+                    },
+                    "options": {
+                        "created": "2020-04-02T18:48:36Z",
+                        "credentialStatus": {
+                            "type": "RevocationList2020Status"
+                        }
                     }
-                }
-            },
-            "credentialSchemaId": "${process.env.CREDENTIAL_SCHEMA_DID}",
-            "credentialSchemaVersion":"${process.env.CREDENTIAL_SCHEMA_VERSION}",
-            "tags": ["courseCompletionCredential"]
-        }`
-        const response = await axios.post(process.env.CREDENTIAL_SERVICE_URL + endpoint, JSON.parse(requestDto));
+                },
+                "credentialSchemaId": "${process.env.CREDENTIAL_SCHEMA_DID}",
+                "credentialSchemaVersion":"${
+                  process.env.CREDENTIAL_SCHEMA_VERSION
+                }",
+                "tags": ["courseCompletionCredential"]
+            }`;
+        const response = await axios.post(
+          process.env.CREDENTIAL_SERVICE_URL + endpoint,
+          JSON.parse(requestDto)
+        );
 
-        // console.log(response.data)
         const credentialId = response.data.credential.id;
-
+    
         await this.prisma.consumerCourseMetadata.update({
-            where: {
-                consumerId_courseInfoId: {
-                    consumerId,
-                    courseInfoId: courseInfo.id
-                }
+          where: {
+            consumerId_courseInfoId: {
+              consumerId,
+              courseInfoId: courseInfo.id,
             },
-            data: {
-                status: CourseProgressStatus.COMPLETED,
-                completedAt: new Date(),
-                certificateCredentialId: credentialId
-            },
+          },
+          data: {
+            status: CourseProgressStatus.COMPLETED,
+            completedAt: new Date(),
+            certificateCredentialId: credentialId,
+          },
         });
-    }
+      }
+    
 
     async requestCredits(consumerId: string, requestDto: RequestDto) {
 

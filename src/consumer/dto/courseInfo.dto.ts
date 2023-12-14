@@ -1,6 +1,6 @@
 import { JsonValue } from "@prisma/client/runtime/library";
 import { Type } from "class-transformer";
-import { IsNotEmpty, IsString, Min, IsInt, IsArray, IsUrl, ArrayNotEmpty, IsNumber, IsOptional, IsObject, IsEmail, IsPhoneNumber } from "class-validator";
+import { IsNotEmpty, IsString, Min, IsInt, IsArray, IsUrl, ArrayNotEmpty, IsNumber, IsOptional, IsObject, IsEmail, IsPhoneNumber, ValidateNested } from "class-validator";
 import { CompetencyMap } from "src/utils/types";
 
 export class CourseInfoDto {
@@ -96,39 +96,73 @@ export class PurchasedCourseInfoResponseDto extends CourseInfoResponseDto {
     readonly courseLink: string | null;
 }
 
-class Customer {
-  @IsOptional()
+class CustomerDto {
+  @IsNotEmpty()
   @IsString()
-  name?: string;
-
-  @IsOptional()
-  @IsPhoneNumber()
-  phone?: string;
+  name: string;
 
   @IsNotEmpty()
-  @IsEmail()
+  @IsString()
+  phone: string;
+
+  @IsNotEmpty()
+  @IsString()
   email: string;
 }
 
-export class UpdatePurchasedCourseConfirmationDto {
-  @IsOptional()
+export class OrderConfirmationDto {
+  @IsNotEmpty()
   @IsString()
-  courseName?: string;
+  messageId: string;
+
+  @IsNotEmpty()
+  @IsString()
+  transactionId: string;
 
   @IsNotEmpty()
   @IsString()
   bppId: string;
 
   @IsNotEmpty()
+  @IsUrl()
+  bppUri: string;
+
+  @IsNotEmpty()
+  @IsString()
+  providerId: string;
+
+  @IsNotEmpty()
+  @IsString()
+  providerName: string;
+
+  @IsNotEmpty()
   @IsString()
   providerCourseId: string;
+
+  @IsNotEmpty()
+  @IsString()
+  providerOrderId: string;
+
+  @IsNotEmpty()
+  @IsString()
+  courseName: string;
 
   @IsNotEmpty()
   @IsUrl()
   courseLink: string;
 
-  @IsNotEmpty()
   @IsObject()
-  @Type(() => Customer)
-  customer: Customer;
+  @ValidateNested()
+  @Type(() => CustomerDto)
+  customer: CustomerDto;
+
+  @IsObject()
+  price: {
+    currency: string;
+    value: string;
+  };
+
+  @IsNotEmpty()
+  @IsString()
+  status: string;
 }
