@@ -3,7 +3,7 @@ import { ConsumerService } from "./consumer.service";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ConsumerAccountDto, CreditsDto } from "./dto/account.dto";
 import { PurchaseStatusDto, PurchasedCourseDto } from "./dto/purchasedCourse.dto";
-import { CourseInfoDto, CourseInfoResponseDto } from "./dto/courseInfo.dto";
+import { CourseInfoDto, CourseInfoResponseDto, UpdatePurchasedCourseConfirmationDto } from "./dto/courseInfo.dto";
 import { TransactionResponse } from "./dto/transaction.dto";
 import { FeedbackDto } from "./dto/feedback.dto";
 import { CreateNotificationDto, NotificationResponseDto } from "./dto/notification.dto";
@@ -522,6 +522,45 @@ export class ConsumerController {
             });
         }
     }
+
+    // Update purchased course details via onest network
+  @ApiOperation({ summary: "update purchased course via onest network" })
+  @ApiResponse({ status: HttpStatus.OK })
+  @Patch("course/update-purchase/confirm")
+  async updatePurchasedCourseOnConfirm(
+    @Body()
+    updatePurchasedCourseConfirmationDto:
+      | any
+      | UpdatePurchasedCourseConfirmationDto,
+    @Res() res
+  ) {
+    try {
+      this.logger.log(
+        `Updating purchased course on confirm from onest network for user with email:- ${updatePurchasedCourseConfirmationDto?.customer?.email}`
+      );
+
+      await this.consumerService.updatePurchasedCourseOnConfirm(
+        updatePurchasedCourseConfirmationDto
+      );
+
+      this.logger.log(
+        `Successfully updated purchased course on confirm from onest network for user with email:- ${updatePurchasedCourseConfirmationDto?.customer?.email}`
+      );
+
+      res.status(HttpStatus.OK).json({
+        message: "Course updated successfully",
+      });
+    } catch (error) {
+      this.logger.error(`Failed to update purchased course on confirm from onest network for user with email:- ${updatePurchasedCourseConfirmationDto?.customer?.email}`,error);
+
+      const { errorMessage, statusCode } = getPrismaErrorStatusAndMessage(error);
+      res.status(statusCode).json({
+        statusCode,
+        message: errorMessage || `Failed to update purchased course on confirm from onest network for user with email:- ${updatePurchasedCourseConfirmationDto?.customer?.email}`,
+      });
+    }
+  }
+
 
     // Reverse the transaction of a failed purchase
     @ApiOperation({ summary: 'Reverse failed purchase transaction' })

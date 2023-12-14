@@ -1,5 +1,6 @@
 import { JsonValue } from "@prisma/client/runtime/library";
-import { IsNotEmpty, IsString, Min, IsInt, IsArray, IsUrl, ArrayNotEmpty, IsNumber, IsOptional, IsObject } from "class-validator";
+import { Type } from "class-transformer";
+import { IsNotEmpty, IsString, Min, IsInt, IsArray, IsUrl, ArrayNotEmpty, IsNumber, IsOptional, IsObject, IsEmail, IsPhoneNumber } from "class-validator";
 import { CompetencyMap } from "src/utils/types";
 
 export class CourseInfoDto {
@@ -93,4 +94,41 @@ export class CourseInfoResponseDto {
 
 export class PurchasedCourseInfoResponseDto extends CourseInfoResponseDto { 
     readonly courseLink: string | null;
+}
+
+class Customer {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsPhoneNumber()
+  phone?: string;
+
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+}
+
+export class UpdatePurchasedCourseConfirmationDto {
+  @IsOptional()
+  @IsString()
+  courseName?: string;
+
+  @IsNotEmpty()
+  @IsString()
+  bppId: string;
+
+  @IsNotEmpty()
+  @IsString()
+  providerCourseId: string;
+
+  @IsNotEmpty()
+  @IsUrl()
+  courseLink: string;
+
+  @IsNotEmpty()
+  @IsObject()
+  @Type(() => Customer)
+  customer: Customer;
 }

@@ -2,7 +2,7 @@ import { BadRequestException, HttpException, Injectable, Logger, NotFoundExcepti
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ConsumerAccountDto } from './dto/account.dto';
 import { PurchaseStatusDto, PurchasedCourseDto } from './dto/purchasedCourse.dto';
-import { CourseInfoDto, CourseInfoResponseDto } from './dto/courseInfo.dto';
+import { CourseInfoDto, CourseInfoResponseDto, UpdatePurchasedCourseConfirmationDto } from './dto/courseInfo.dto';
 import { TransactionResponse } from './dto/transaction.dto';
 import { FeedbackDto, RatingRequestDto } from './dto/feedback.dto';
 import { CreateNotificationDto, NotificationResponseDto } from './dto/notification.dto';
@@ -498,6 +498,53 @@ export class ConsumerService {
             }
         });
     }
+
+    async updatePurchasedCourseOnConfirm(
+      updatePurchasedCourseConfirmationDto: UpdatePurchasedCourseConfirmationDto
+    ) {
+      const {
+        bppId,
+        courseLink,
+        providerCourseId: courseId,
+        customer,
+        courseName
+      } = updatePurchasedCourseConfirmationDto;
+  
+      const user = await this.prisma.consumerMetadata.findUnique({
+        where: { email: customer.email },
+      });
+  
+      if (!user) {
+        throw new NotFoundException(
+          `User with email:- ${customer.email} not found`
+        );
+      }
+  
+      const consumerCourseData =
+        await this.prisma.consumerCourseMetadata.findFirst({
+          where: {
+            consumerId: user?.consumerId,
+            CourseInfo: {
+              courseId: courseId,
+              bppId: bppId,
+            },
+          },
+        });
+  
+      if (!consumerCourseData)
+        throw new BadRequestException(`Course ${courseName?? `:- ${courseName}`} not purchased by user ${customer.name?? `:- ${customer.name}`} with email:- ${customer.email}`);
+  
+      return await this.prisma.courseInfo.update({
+        where: {
+          courseId_bppId: {
+            bppId,
+            courseId,
+          },
+        },
+        data: { courseLink },
+      });
+    }
+  
 
     async reversePurchase(consumerId: string, courseIdDto: CourseIdDto) {
         await this.getConsumer(consumerId);
