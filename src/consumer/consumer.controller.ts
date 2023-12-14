@@ -414,11 +414,11 @@ export class ConsumerController {
             res.status(HttpStatus.OK).json({
                 message: "fetch successful",
                 data: {
-                    courses
+                    courses: courses.data
                 }
             });
         } catch (err) {
-            this.logger.error(`Poll failed`);
+            this.logger.error(`Poll failed `, err);
 
             const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
             res.status(statusCode).json({
@@ -479,7 +479,7 @@ export class ConsumerController {
             res.status(HttpStatus.OK).json({
                 message: "fetch successful",
                 data: {
-                    course
+                    course: course
                 }
             });
         } catch (err) {

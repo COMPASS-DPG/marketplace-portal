@@ -367,7 +367,7 @@ export class ConsumerService {
 
     async getPollResults(messageId: string) {
         const url = process.env.BAP_URL;
-        const endpoint = `/on_search/poll/${messageId}`;
+        const endpoint = `/courses/poll/${messageId}`;
         const searchResults = await axios.get(url + endpoint);
         return searchResults;
     }
