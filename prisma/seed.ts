@@ -49,7 +49,7 @@ const main = async () => {
             avgRating: 4.5,
             author: "Stephen Grider",
             competency: {
-                "API Development": ["Level1", "Level2"],
+                "NestJs": ["Level1", "Level2"],
                 "Typescript": ["Level1"],
                 "Backend engineering": ["Level1"]
             }

@@ -323,7 +323,6 @@ export class ConsumerService {
             ? JSON.parse(consumerCourseData.CourseInfo.competency) 
             : consumerCourseData.CourseInfo.competency;
         consumerCourseData.CourseInfo.competency
-        console.log(competencies);
 
         for(const competency in competencies) {
             const levels = competencies[competency];
@@ -338,9 +337,9 @@ export class ConsumerService {
                     certificateId: consumerCourseData.certificateCredentialId,
                     dateOfIssuance: new Date().toISOString()
                 }
-                console.log(addAssessmentBody);
+                // console.log(addAssessmentBody);
                 const response = await axios.post(process.env.PASSBOOK_SERVICE_URL + endpoint, addAssessmentBody);
-                console.log(response.data);
+                // console.log(response.data);
             }
         }
 
@@ -740,6 +739,29 @@ export class ConsumerService {
         const queryParams = `?limit=${limit}&offset=${offset}`;
         
         const response = await axios.get(process.env.COURSE_MANAGER_URL + endpoint + queryParams);
+        return response.data.data;
+    }
+
+    async recommendedCourses(consumerId: string): Promise<CourseResponse> {
+
+        // Define the URL of the API endpoint
+        const apiUrl = 'https://test-compass.free.beeceptor.com/frac/getrole';
+
+        let response = await axios.get(apiUrl);
+
+        if(!process.env.COURSE_MANAGER_URL)
+            throw new HttpException("Course manager URL not defined", 500);
+
+        const endpoint = `/api/course/recommended`;
+        let queryParams = `?`;
+        response.data.roles.forEach((role) => {
+            role.competency.forEach((competency) => {
+                queryParams += `competencies=${competency.name}&`;
+            });
+        })
+        queryParams = queryParams.slice(0, -1);
+        
+        response = await axios.get(process.env.COURSE_MANAGER_URL + endpoint + queryParams);
         return response.data.data;
     }
 }

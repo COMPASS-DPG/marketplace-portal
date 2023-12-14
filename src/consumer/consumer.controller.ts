@@ -333,6 +333,38 @@ export class ConsumerController {
         }
     }
 
+    // Get a list of recommended courses
+    @ApiOperation({ summary: 'Get recommended courses' })
+    @ApiResponse({ status: HttpStatus.OK, type: [CourseResponse] })
+    @Get("/:consumerId/course/recommended")
+    async getRecommendedCourses(
+        @Param("consumerId", ParseUUIDPipe) consumerId: string,
+        @Res() res
+    ) {
+        try {
+            this.logger.log(`Fetching recommended courses`);
+
+            const response = await this.consumerService.recommendedCourses(consumerId);
+
+            this.logger.log(`Successfully fetched the courses`);
+            
+            res.status(HttpStatus.OK).json({
+                message: "fetch successful",
+                data: {
+                    response
+                }
+            });
+        } catch (err) {
+            this.logger.error(`Failed to fetch courses`);
+
+            const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
+            res.status(statusCode).json({
+                statusCode, 
+                message: errorMessage || "Failed to fetch courses",
+            });
+        }
+    }
+
     // Search for courses
     @ApiOperation({ summary: 'Search for courses' })
     @ApiResponse({ status: HttpStatus.OK, type: SearchResponseDto })
