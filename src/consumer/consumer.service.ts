@@ -427,6 +427,22 @@ export class ConsumerService {
         if(credits < courseInfoDto.credits)
             throw new BadRequestException("Not enough credits");
 
+        // Check if provider wallet exists
+        const providerWalletEndpoint = `/api/providers/${courseInfoDto.providerId}/credits`;
+
+        try {
+            await axios.get(process.env.WALLET_SERVICE_URL + providerWalletEndpoint);
+        } catch(e) {
+            // create wallet if it does not exist
+            const createWalletEndpoint = `/api/wallet/create`;
+            const createWalletBody = {
+                userId: courseInfoDto.providerId,
+                type: "PROVIDER",
+                credits: 0
+            }
+            await axios.post(process.env.WALLET_SERVICE_URL + createWalletEndpoint, createWalletBody);
+        }
+
         let courseLink: string | undefined;
         if(courseInfoDto.bppId && courseInfoDto.bppUri) {
             // fetch user details from user service
