@@ -444,6 +444,13 @@ export class ConsumerService {
         }
 
         let courseLink: string | undefined;
+
+        // temporary hack! Needs to be changed
+        if(courseInfoDto.bppId === "compass.bpp.course_manager") {
+            courseInfoDto.bppId = undefined;
+            courseInfoDto.bppUri = undefined;
+        }
+
         if(courseInfoDto.bppId && courseInfoDto.bppUri) {
             // fetch user details from user service
             const consumerResponse = await this.getConsumerFromUserService(consumerId);
