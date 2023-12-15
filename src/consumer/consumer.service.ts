@@ -374,7 +374,7 @@ export class ConsumerService {
     }
 
     async getPollResults(messageId: string) {
-        const url = process.env.BAP_URL;
+        const url = process.env.BAP_URI;
         const endpoint = `/courses/poll/${messageId}`;
         const searchResults = await axios.get(url + endpoint);
         return searchResults;
@@ -451,6 +451,13 @@ export class ConsumerService {
         }
 
         let courseLink: string | undefined;
+
+        // temporary hack! Needs to be changed
+        if(courseInfoDto.bppId === "compass.bpp.course_manager") {
+            courseInfoDto.bppId = undefined;
+            courseInfoDto.bppUri = undefined;
+        }
+
         if(courseInfoDto.bppId && courseInfoDto.bppUri) {
             // fetch user details from user service
             const consumerResponse = await this.getConsumerFromUserService(consumerId);
