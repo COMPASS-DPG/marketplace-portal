@@ -48,11 +48,62 @@ const main = async () => {
             providerId: "123e4567-e89b-42d3-a456-556642440011",
             avgRating: 4.5,
             author: "Stephen Grider",
-            competency: {
-                "NestJs": ["Level1", "Level2"],
-                "Typescript": ["Level1"],
-                "Backend engineering": ["Level1"]
-            }
+            competency: [{
+                    "id": 1,
+                    "name": "NestJs",
+                    "levels": [
+                        {
+                            "id": 1,
+                            "levelNumber": 1,
+                            "name": "Basic"
+                        }, {
+                            "id": 2,
+                            "levelNumber": 2,
+                            "name": "Intermediate"
+                        }, {
+                            "id": 3,
+                            "levelNumber": 3,
+                            "name": "Advanced"
+                        }
+                    ]
+                }, {
+                    "id": 2,
+                    "name": "Typescript",
+                    "levels": [
+                        {
+                            "id": 4,
+                            "levelNumber": 1,
+                            "name": "Basic"
+                        }, {
+                            "id": 5,
+                            "levelNumber": 2,
+                            "name": "Intermediate"
+                        }, {
+                            "id": 6,
+                            "levelNumber": 3,
+                            "name": "Advanced"
+                        }
+                    ]
+                }, {
+                    "id": 3,
+                    "name": "Backend engineering",
+                    "levels": [
+                        {
+                            "id": 7,
+                            "levelNumber": 1,
+                            "name": "Basic"
+                        }, {
+                            "id": 8,
+                            "levelNumber": 2,
+                            "name": "Intermediate"
+                        }, {
+                            "id": 9,
+                            "levelNumber": 3,
+                            "name": "Advanced"
+                        }
+                    ]
+                }
+            ]
         }, {
             id: 2,
             courseId: "123e4567-e89b-42d3-a456-556642440051",
@@ -68,11 +119,62 @@ const main = async () => {
             providerId: "123e4567-e89b-42d3-a456-556642440011",
             avgRating: 4.5,
             author: "Lindsay Marsh",
-            competency: {
-                "API Development": ["Level1", "Level2"],
-                "Typescript": ["Level1"],
-                "Backend engineering": ["Level1"]
+            competency: [{
+                "id": 1,
+                "name": "API Development",
+                "levels": [
+                    {
+                        "id": 1,
+                        "levelNumber": 1,
+                        "name": "Basic"
+                    }, {
+                        "id": 2,
+                        "levelNumber": 2,
+                        "name": "Intermediate"
+                    }, {
+                        "id": 3,
+                        "levelNumber": 3,
+                        "name": "Advanced"
+                    }
+                ]
+            }, {
+                "id": 2,
+                "name": "Typescript",
+                "levels": [
+                    {
+                        "id": 4,
+                        "levelNumber": 1,
+                        "name": "Basic"
+                    }, {
+                        "id": 5,
+                        "levelNumber": 2,
+                        "name": "Intermediate"
+                    }, {
+                        "id": 6,
+                        "levelNumber": 3,
+                        "name": "Advanced"
+                    }
+                ]
+            }, {
+                "id": 3,
+                "name": "Backend engineering",
+                "levels": [
+                    {
+                        "id": 7,
+                        "levelNumber": 1,
+                        "name": "Basic"
+                    }, {
+                        "id": 8,
+                        "levelNumber": 2,
+                        "name": "Intermediate"
+                    }, {
+                        "id": 9,
+                        "levelNumber": 3,
+                        "name": "Advanced"
+                    }
+                ]
             }
+        ]
         }, {
             id: 3,
             courseId: "123e4567-e89b-42d3-a456-556642440052",
@@ -88,11 +190,62 @@ const main = async () => {
             providerId: "123e4567-e89b-42d3-a456-556642440011",
             author: "Jose Portilla",
             avgRating: 4.5,
-            competency: {
-                "API Development": ["Level1", "Level2"],
-                "Typescript": ["Level1"],
-                "Backend engineering": ["Level1"]
+            competency: [{
+                "id": 1,
+                "name": "API Development",
+                "levels": [
+                    {
+                        "id": 1,
+                        "levelNumber": 1,
+                        "name": "Basic"
+                    }, {
+                        "id": 2,
+                        "levelNumber": 2,
+                        "name": "Intermediate"
+                    }, {
+                        "id": 3,
+                        "levelNumber": 3,
+                        "name": "Advanced"
+                    }
+                ]
+            }, {
+                "id": 2,
+                "name": "Typescript",
+                "levels": [
+                    {
+                        "id": 4,
+                        "levelNumber": 1,
+                        "name": "Basic"
+                    }, {
+                        "id": 5,
+                        "levelNumber": 2,
+                        "name": "Intermediate"
+                    }, {
+                        "id": 6,
+                        "levelNumber": 3,
+                        "name": "Advanced"
+                    }
+                ]
+            }, {
+                "id": 3,
+                "name": "Backend engineering",
+                "levels": [
+                    {
+                        "id": 7,
+                        "levelNumber": 1,
+                        "name": "Basic"
+                    }, {
+                        "id": 8,
+                        "levelNumber": 2,
+                        "name": "Intermediate"
+                    }, {
+                        "id": 9,
+                        "levelNumber": 3,
+                        "name": "Advanced"
+                    }
+                ]
             }
+        ]
         }]
     })
     const purchasedCourses = await prisma.consumerCourseMetadata.createMany({
