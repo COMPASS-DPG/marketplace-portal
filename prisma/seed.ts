@@ -16,18 +16,22 @@ const main = async () => {
     const consumers = await prisma.consumerMetadata.createMany({
         data: [{
             consumerId: "4d45a9e9-4a4d-4c92-aaea-7b5abbd6ff98",
+            name: "Neha Patil",
             email: "neha.patil@example.com",
             phoneNumber: "9999999990"
         }, {
             consumerId: "abaa7220-5d2e-4e05-842a-95b2c4ce1876",
+            name: "Rajesh Kumar",
             email: "rajesh.kumar@example.com",
             phoneNumber: "9999999991"
         }, {
             consumerId: "0f5d0b13-8d72-46c9-a7c4-c1f7e5aa1f17",
+            name: "Priya Jain",
             email: "priya.jain@example.com",
             phoneNumber: "9999999992"
         }, {
             consumerId: "bbf1f7cf-4216-458e-8d98-0d9204ae57ef",
+            name: "Arjun Singh",
             email: "arjun.singh@example.com",
             phoneNumber: "9999999993"
         }]

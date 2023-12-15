@@ -36,20 +36,21 @@ export class ConsumerService {
         return consumer;
     }
 
-    async getConsumerFromUserService(consumerId: string) {
-
-        if(!process.env.USER_SERVICE_URL)
-            throw new HttpException("User Service URL not defined", 500);
-
-        const endpoint = `/api/mockFracService/user/${consumerId}`;
-        const response = await axios.get(process.env.USER_SERVICE_URL + endpoint);
-        const consumer = response.data.data;
-        if(!consumer)
-            throw new NotFoundException("consumer does not exist");
-        return consumer;
-    }
-
     async createConsumer(signupDto: ConsumerSignupDto) {
+
+        // Forward to wallet service for creation of wallet
+        if(!process.env.WALLET_SERVICE_URL)
+            throw new HttpException("Wallet service URL not defined", 500);
+
+        const url = process.env.WALLET_SERVICE_URL;
+        const endpoint = url + `/api/wallet/create`;
+        const reqBody = {
+            userId: signupDto.consumerId,
+            type: 'CONSUMER',
+            credits: 0
+        }
+        const resp = await axios.post(endpoint, reqBody);
+
         await this.prisma.consumerMetadata.create({
             data: signupDto
         });
@@ -81,14 +82,9 @@ export class ConsumerService {
         // console.log(response.data);
         credits = response.data.data.credits;
 
-        // forward to user service
-        const consumerResponse = await this.getConsumerFromUserService(consumerId);
-
         return {
             consumerId,
-            name: consumerResponse.name,
-            designation: consumerResponse.designation,
-            profilePicture: consumerResponse.profilePicture,
+            name: consumer.name,
             emailId: consumer.email,
             phoneNumber: consumer.phoneNumber,
             createdAt: consumer.createdAt,
@@ -459,8 +455,6 @@ export class ConsumerService {
         }
 
         if(courseInfoDto.bppId && courseInfoDto.bppUri) {
-            // fetch user details from user service
-            const consumerResponse = await this.getConsumerFromUserService(consumerId);
 
             // `/confirm` to BAP
             if(!process.env.BAP_URI)
@@ -473,8 +467,8 @@ export class ConsumerService {
                 bppId: courseInfoDto.bppId,
                 bppUri: courseInfoDto.bppUri,
                 applicantProfile: {
-                    name: consumerResponse.name,
-                    email: consumerResponse.email,
+                    name: consumer.name,
+                    email: consumer.email,
                     phone: consumer.phoneNumber
                 }
             }
