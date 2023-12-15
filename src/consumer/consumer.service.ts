@@ -314,11 +314,18 @@ export class ConsumerService {
             }
         }
 
-        // forward to passbook to save certificate
         if(!process.env.PASSBOOK_SERVICE_URL)
             throw new HttpException("Passbook Service URL not defined", 500);
 
-        const endpoint = `/api/user/assessment`;
+        // Create user if it does not exist in passbook
+        let endpoint = `/api/user`;
+        const userBody = {
+            userId: consumerId
+        }
+        await axios.post(process.env.PASSBOOK_SERVICE_URL + endpoint, userBody);
+
+        // forward to passbook to save certificate
+        endpoint = `/api/user/assessment`;
 
         const competencies = (typeof consumerCourseData.CourseInfo.competency == "string") 
             ? JSON.parse(consumerCourseData.CourseInfo.competency) 
@@ -329,7 +336,7 @@ export class ConsumerService {
             const levels = competencies[competency];
             for(const level of levels) {
                 const addAssessmentBody = {
-                    userId: "1246", // consumerId,
+                    userId: consumerId,
                     competencyId: competencyMap[competency] ?? 0,
                     competency: competency,
                     levelNumber: (typeof level == "number") ? level : 1,
