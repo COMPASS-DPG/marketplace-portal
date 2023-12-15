@@ -11,7 +11,7 @@ services:
 #      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
 #      POSTGRES_DB: ${DATABASE_NAME}
 
-  marketplace:
+  marketplace_portal:
     build:
       context: .
       dockerfile: Dockerfile
