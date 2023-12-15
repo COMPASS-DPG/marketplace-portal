@@ -12,10 +12,10 @@ DATABASE_URL="postgresql://postgres:secret@postgres:5432/marketplace-db?sslmode=
 
 # DEPENDENT MODULES
 WALLET_SERVICE_URL=http://wallet:4022
-REQUEST_SERVICE_URL=http://localhost:4023
+REQUEST_SERVICE_URL=http://localhost:4024
 COURSE_MANAGER_URL=https://course.backend.compass.samagra.io
 PASSBOOK_SERVICE_URL=https://compass.samagra.io
-USER_SERVICE_URL=http://0.0.0.0
+USER_SERVICE_URL=http://mock_user_service:4023
 
 # CREDENTIAL SERVICE
 CREDENTIAL_SERVICE_URL="https://compass.samagra.io"
