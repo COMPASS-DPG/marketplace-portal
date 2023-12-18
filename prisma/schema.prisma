@@ -24,6 +24,7 @@ enum NotificationStatus {
 
 model ConsumerMetadata {
   consumerId              String                    @id
+  name                    String
   email                   String                    @unique
   phoneNumber             String                    @unique
   createdAt               DateTime                  @default(now())

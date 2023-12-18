@@ -1,10 +1,14 @@
-import { IsEmail, IsNotEmpty, IsPhoneNumber, IsUUID } from "class-validator";
+import { IsEmail, IsNotEmpty, IsPhoneNumber, IsString, IsUUID } from "class-validator";
 
 export class ConsumerSignupDto {
 
     @IsNotEmpty()
     @IsUUID()
     consumerId: string;
+
+    @IsNotEmpty()
+    @IsString()
+    name: string;
     
     @IsNotEmpty()
     @IsEmail()

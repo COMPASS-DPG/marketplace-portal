@@ -2,9 +2,7 @@
 export class ConsumerAccountDto {
 
     readonly consumerId: string;
-    readonly name?: string;
-    readonly designation?: string;
-    readonly profilePicture?: string;
+    readonly name: string;
     readonly emailId: string;
     readonly phoneNumber: string;
     readonly createdAt: Date;
