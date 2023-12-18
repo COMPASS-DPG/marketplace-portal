@@ -64,7 +64,7 @@ export class CourseInfoDto {
 
     // Map of course competencies and tags of their respective levels
     @IsNotEmpty()
-    @IsObject()
+    @IsArray()
     competency: CompetencyMap;
 
     // provider ID
@@ -111,19 +111,19 @@ class CustomerDto {
 }
 
 export class OrderConfirmationDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   messageId: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   transactionId: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   bppId: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsUrl()
   bppUri: string;
 
@@ -139,7 +139,7 @@ export class OrderConfirmationDto {
   @IsString()
   providerCourseId: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   providerOrderId: string;
 

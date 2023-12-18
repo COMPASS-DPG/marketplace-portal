@@ -291,25 +291,6 @@ export class ConsumerService {
             await axios.patch(process.env.COURSE_MANAGER_URL + endpoint, feedbackBody);
         }
 
-        const competencyMap = {};
-
-        // fetch all competencies
-        if(process.env.USER_SERVICE_URL) {
-
-            let endpoint = `/api/mockFracService/competency`;
-            try {
-                const competencyResponse = await axios.get(process.env.USER_SERVICE_URL + endpoint);
-                const competency = competencyResponse.data.data;
-                competency.map((c) => {
-                    competencyMap[c.name] = c.id;
-                });
-            } catch(err) {
-                const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
-                this.logger.error(`Error while fetching competencies`);
-                this.logger.error(`Error ${statusCode}: ${errorMessage}`);
-            }
-        }
-
         if(!process.env.PASSBOOK_SERVICE_URL)
             throw new HttpException("Passbook Service URL not defined", 500);
 
@@ -328,14 +309,15 @@ export class ConsumerService {
             : consumerCourseData.CourseInfo.competency;
         consumerCourseData.CourseInfo.competency
 
-        for(const competency in competencies) {
-            const levels = competencies[competency];
+        for(const competency of competencies) {
+            const levels = competency.levels;
+            
             for(const level of levels) {
                 const addAssessmentBody = {
                     userId: consumerId,
-                    competencyId: competencyMap[competency] ?? 0,
-                    competency: competency,
-                    levelNumber: (typeof level == "number") ? level : 1,
+                    competencyId: competency.id,
+                    competency: competency.name,
+                    levelNumber: level.levelNumber,
                     type: "CBP",
                     score: "100",
                     certificateId: consumerCourseData.certificateCredentialId,
@@ -448,14 +430,7 @@ export class ConsumerService {
 
         let courseLink: string | undefined;
 
-        // temporary hack! Needs to be changed
-        if(courseInfoDto.bppId === "compass.bpp.course_manager") {
-            courseInfoDto.bppId = undefined;
-            courseInfoDto.bppUri = undefined;
-        }
-
-        if(courseInfoDto.bppId && courseInfoDto.bppUri) {
-
+        if(courseInfoDto.bppId != "compass.bpp.course_manager") {
             // `/confirm` to BAP
             if(!process.env.BAP_URI)
                 throw new HttpException("BAP URI not defined", 500);
@@ -555,37 +530,37 @@ export class ConsumerService {
     }
   
     async validatePurchasedCourseAndUser(
-      email: string,
-      courseId: string,
-      bppId: string,
-      courseName: string = "",
-      name: string = ""
+        email: string,
+        courseId: string,
+        bppId: string,
+        courseName: string = "",
+        name: string = ""
     ): Promise<boolean> {
       const user = await this.prisma.consumerMetadata.findUnique({
-        where: { email: email },
+            where: { email: email },
       });
   
       if (!user) {
-        throw new NotFoundException(`User with email:- ${email} not found`);
+            throw new NotFoundException(`User with email:- ${email} not found`);
       }
   
       const consumerCourseData =
         await this.prisma.consumerCourseMetadata.findFirst({
-          where: {
-            consumerId: user?.consumerId,
-            CourseInfo: {
-              courseId: courseId,
-              bppId: bppId,
+            where: {
+                    consumerId: user?.consumerId,
+                    CourseInfo: {
+                        courseId: courseId,
+                        bppId: bppId,
+                    },
             },
-          },
         });
   
       if (!consumerCourseData)
-        throw new BadRequestException(
-          `Course ${courseName ?? `:- ${courseName}`} not purchased by user ${
-            name ?? `:- ${name}`
-          } with email:- ${email}`
-        );
+            throw new BadRequestException(
+                `Course ${courseName ?? `:- ${courseName}`} not purchased by user ${
+                    name ?? `:- ${name}`
+                } with email:- ${email}`
+            );
 
       return true;
     }  
@@ -732,43 +707,44 @@ export class ConsumerService {
 
     async completeCourse(orderConfirmationDto: OrderConfirmationDto) {
         const {
-          bppId,
-          providerCourseId: courseId,
-          customer,
-          courseName,
+            bppId,
+            providerCourseId: courseId,
+            customer,
+            courseName,
         } = orderConfirmationDto;
-    
+
+        const courseInfo = await this.prisma.courseInfo.findUnique({
+            where: {
+                courseId_bppId: {
+                    courseId,
+                    bppId: bppId ?? COURSE_MANAGER_BPP_ID,
+                },
+            },
+        });
+        if (!courseInfo) throw new NotFoundException("Course does not exist");
+
         await this.validatePurchasedCourseAndUser(
-          customer.email,
-          courseId,
-          bppId,
-          courseName,
-          customer.name
+            customer.email,
+            courseId,
+            bppId,
+            courseName,
+            customer.name
         );
     
         const user = await this.prisma.consumerMetadata.findUnique({
-          where: { email: customer.email },
+            where: { email: customer.email },
         });
         const consumerId = user?.consumerId || "";
     
-        const courseInfo = await this.prisma.courseInfo.findUnique({
-          where: {
-            courseId_bppId: {
-              courseId,
-              bppId: bppId ?? COURSE_MANAGER_BPP_ID,
-            },
-          },
-        });
-        if (!courseInfo) throw new NotFoundException("Course does not exist");
     
         // forward to Credential MS to issue certificate
         if (!process.env.CREDENTIAL_SERVICE_URL)
-          throw new HttpException("Credential Service URL not defined", 500);
+            throw new HttpException("Credential Service URL not defined", 500);
     
         let endpoint = `/credentials/issue`;
-    
+        
         const competency = JSON.stringify(courseInfo.competency);
-    
+
         const requestDto = `{
                 "credential": {
                     "@context": [
@@ -804,27 +780,27 @@ export class ConsumerService {
                 }",
                 "tags": ["courseCompletionCredential"]
             }`;
-        const response = await axios.post(
-          process.env.CREDENTIAL_SERVICE_URL + endpoint,
-          JSON.parse(requestDto)
+                    const response = await axios.post(
+            process.env.CREDENTIAL_SERVICE_URL + endpoint,
+            JSON.parse(requestDto)
         );
 
         const credentialId = response.data.credential.id;
     
         await this.prisma.consumerCourseMetadata.update({
-          where: {
-            consumerId_courseInfoId: {
-              consumerId,
-              courseInfoId: courseInfo.id,
+            where: {
+                consumerId_courseInfoId: {
+                    consumerId,
+                    courseInfoId: courseInfo.id,
+                },
             },
-          },
-          data: {
-            status: CourseProgressStatus.COMPLETED,
-            completedAt: new Date(),
-            certificateCredentialId: credentialId,
-          },
+            data: {
+                status: CourseProgressStatus.COMPLETED,
+                completedAt: new Date(),
+                certificateCredentialId: credentialId,
+            },
         });
-      }
+    }
     
 
     async requestCredits(consumerId: string, requestDto: RequestDto) {
