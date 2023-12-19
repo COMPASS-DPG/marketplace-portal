@@ -430,7 +430,7 @@ export class ConsumerService {
 
         let courseLink: string | undefined;
 
-        if(courseInfoDto.bppId != "compass.bpp.course_manager") {
+        if(courseInfoDto.bppId && courseInfoDto.bppId != "compass.bpp.course_manager") {
             // `/confirm` to BAP
             if(!process.env.BAP_URI)
                 throw new HttpException("BAP URI not defined", 500);
