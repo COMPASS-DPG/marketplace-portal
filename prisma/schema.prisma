@@ -12,9 +12,77 @@ datasource db {
 
 // Here goes models
 
-//dummy user model
-model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+enum CourseProgressStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum NotificationStatus {
+  VIEWED
+  NOT_VIEWED
+}
+
+model ConsumerMetadata {
+  consumerId              String                    @id
+  name                    String
+  email                   String                    @unique
+  phoneNumber             String                    @unique
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  savedCourses            Int[]                     @default([])
+  Notifications           Notification[]        
+  ConsumerCourseMetadata  ConsumerCourseMetadata[]         
+}
+
+model ConsumerCourseMetadata {
+  id                      Int                   @id @default(autoincrement())
+  consumerId              String    
+  courseInfoId            Int       
+  becknTransactionId      String?               @unique
+  becknMessageId          String?               @unique
+  status                  CourseProgressStatus  @default(IN_PROGRESS)
+  rating                  Int?
+  feedback                String?
+  purchasedAt             DateTime              @default(now())
+  completedAt             DateTime?              
+  certificateCredentialId String?
+  CourseInfo              CourseInfo            @relation(fields: [courseInfoId], references: [id])
+  ConsumerMetadata        ConsumerMetadata      @relation(fields: [consumerId], references: [consumerId])
+
+  @@unique([consumerId, courseInfoId])
+}
+
+model CourseInfo {
+  id                      Int                       @id @default(autoincrement())
+  courseId                String
+  providerId              String
+  bppId                   String
+  bppUri                  String
+  title                   String
+  description             String
+  credits                 Int
+  imageLink               String
+  language                String[]
+  courseLink              String?
+  providerName            String
+  author                  String
+  avgRating               Float?
+  competency              Json
+  ConsumerCourseMetadata  ConsumerCourseMetadata[]
+
+  @@unique([courseId, bppId])
+}
+
+model Admin {
+  id        String     @id @db.Uuid
+}
+
+model Notification {
+  id                  Int                 @id @default(autoincrement())
+  consumerId          String    
+  text                String
+  link                String
+  status              NotificationStatus  @default(NOT_VIEWED)
+  createdAt           DateTime            @default(now())
+  ConsumerMetadata    ConsumerMetadata    @relation(fields: [consumerId], references: [consumerId])
 }

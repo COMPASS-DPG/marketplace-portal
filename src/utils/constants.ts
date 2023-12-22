@@ -14,3 +14,5 @@ export const SWAGGER_CONSTANTS = {
 export enum SWAGGER_TAGS {
   DEFAULT = "default",
 }
+
+export const COURSE_MANAGER_BPP_ID = "compass.bpp.course_manager";
