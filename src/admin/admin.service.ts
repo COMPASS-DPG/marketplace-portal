@@ -39,17 +39,48 @@ export class AdminService {
                 }
             }
         });
+
+        //fetch the consumers' name & role for each consumer from user-service
+        const userPromises = consumers.map(async (consumer) => {
+            const baseUrl = "https://compass-dev.tarento.com/api/user/v4/user/search";
+            const headers = {
+                'Authorization': 'bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIzRjB4UmVWNTJLcTc3R0xycnlKT2N2cXQwNVpUZTYySyJ9.ia3j2Pr-IFuioVXzerZjSNwC3HKvj-YcwjvkxOUNx0o',
+                'Content-Type': 'application/json',
+                'Cookie': 'connect.sid=s%3AXThrvZBYAza6cyO1AN6v2_6KOL5EM5cI.tQhpI4ryxMsIAvhAW6A%2Fkc9pAr5sxoC41PnTwUemWP0'
+              };
+              
+            const data = {
+                "request": {
+                    "filters": {
+                        "id": consumer.consumerId
+                    }
+                }
+            };
+
+            let response = await axios.post(baseUrl, data, {headers});
+            console.log("Response for userId: " + consumer.consumerId + " is " + JSON.stringify(response.data) )
+            return {
+                id: response.data.result?.response?.content[0]?.userId,
+                userName: response.data.result?.response?.content[0]?.userName,
+                designation: response.data.result?.response?.content[0]?.profileDetails?.professionalDetails?.designation,
+                profilePicture: null
+                // profilePicture not present in user-service
+            }
+        })
+
+        const users = await Promise.all(userPromises);
+        console.log("Users retrieved from user service: ", users);
         // forward to user service to fetch name, role
-        if(!process.env.USER_SERVICE_URL)
-            throw new HttpException("User service URL not defined", 500);
+        // if(!process.env.USER_SERVICE_URL)
+        //     throw new HttpException("User service URL not defined", 500);
 
-        let endpoint = `/api/mockFracService/user`;
-        let url = process.env.USER_SERVICE_URL + endpoint;
+        // let endpoint = `/api/mockFracService/user`;
+        // let url = process.env.USER_SERVICE_URL + endpoint;
 
-        const userResponse = await axios.get(url);
+        // const userResponse = await axios.get(url);
 
         const usersMap = {};
-        userResponse.data.data.forEach((user) => {
+        users.forEach((user) => {
             usersMap[user.id] = {
                 name: user.userName,
                 role: user.designation,
@@ -61,8 +92,8 @@ export class AdminService {
         if(!process.env.WALLET_SERVICE_URL)
             throw new HttpException("Wallet service URL not defined", 500);
 
-        endpoint = `/api/admin/${adminId}/credits/consumers`;
-        url = process.env.WALLET_SERVICE_URL + endpoint;
+        let endpoint = `/api/admin/${adminId}/credits/consumers`;
+        let url = process.env.WALLET_SERVICE_URL + endpoint;
 
         const response = await axios.get(url);
         const creditsMap = {};
@@ -74,7 +105,7 @@ export class AdminService {
                 consumerId: c.consumerId,
                 numCoursesPurchased: c._count.ConsumerCourseMetadata,
                 credits: creditsMap[c.consumerId],
-                name: usersMap[c.consumerId].name,
+                name: usersMap[c.consumerId].userName,
                 role: usersMap[c.consumerId].role,
                 profilePicture: usersMap[c.consumerId].profilePicture
             }
