@@ -44,9 +44,9 @@ export class AdminService {
         const userPromises = consumers.map(async (consumer) => {
             const baseUrl = "https://compass-dev.tarento.com/api/user/v4/user/search";
             const headers = {
-                'Authorization': 'bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIzRjB4UmVWNTJLcTc3R0xycnlKT2N2cXQwNVpUZTYySyJ9.ia3j2Pr-IFuioVXzerZjSNwC3HKvj-YcwjvkxOUNx0o',
+                'Authorization': 'bearer ' + process.env.USER_SERVICE_TOKEN,
                 'Content-Type': 'application/json',
-                'Cookie': 'connect.sid=s%3AXThrvZBYAza6cyO1AN6v2_6KOL5EM5cI.tQhpI4ryxMsIAvhAW6A%2Fkc9pAr5sxoC41PnTwUemWP0'
+                'Cookie': process.env.USER_SERVICE_COOKIE
               };
               
             const data = {
