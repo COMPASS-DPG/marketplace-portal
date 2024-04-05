@@ -42,7 +42,7 @@ export class AdminService {
 
         //fetch the consumers' name & role for each consumer from user-service
         const userPromises = consumers.map(async (consumer) => {
-            const baseUrl = "https://compass-dev.tarento.com/api/user/v4/user/search";
+            const baseUrl = process.env.USER_SERVICE_URL || "";
             const headers = {
                 'Authorization': 'bearer ' + process.env.USER_SERVICE_TOKEN,
                 'Content-Type': 'application/json',

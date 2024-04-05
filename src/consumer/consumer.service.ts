@@ -33,12 +33,12 @@ export class ConsumerService {
         });
         if(!consumer) {
             // if the consumer is not available in the marketplace models, fetch it from user service
-            const baseUrl = "https://compass-dev.tarento.com/api/user/v4/user/search";
+            const baseUrl = process.env.USER_SERVICE_URL || "";
             const headers = {
                 'Authorization': 'bearer ' + process.env.USER_SERVICE_TOKEN,
                 'Content-Type': 'application/json',
                 'Cookie': process.env.USER_SERVICE_COOKIE
-              };
+            };
               
             const data = {
                 "request": {
@@ -117,7 +117,7 @@ export class ConsumerService {
             }
         });
         if(!consumer) {
-            const baseUrl = "https://compass-dev.tarento.com/api/user/v4/user/search";
+            const baseUrl = process.env.USER_SERVICE_URL || "";
             const headers = {
                 'Authorization': 'bearer ' + process.env.USER_SERVICE_TOKEN,
                 'Content-Type': 'application/json',
