@@ -62,7 +62,7 @@ export class AdminService {
             return {
                 id: response.data.result?.response?.content[0]?.userId,
                 userName: response.data.result?.response?.content[0]?.userName,
-                designation: response.data.result?.response?.content[0]?.profileDetails?.professionalDetails?.designation,
+                designation: response.data.result?.response?.content[0]?.profileDetails?.professionalDetails[0]?.designation,
                 profilePicture: null
                 // profilePicture not present in user-service
             }
@@ -105,9 +105,9 @@ export class AdminService {
                 consumerId: c.consumerId,
                 numCoursesPurchased: c._count.ConsumerCourseMetadata,
                 credits: creditsMap[c.consumerId],
-                name: usersMap[c.consumerId].userName,
-                role: usersMap[c.consumerId].role,
-                profilePicture: usersMap[c.consumerId].profilePicture
+                name: usersMap[c.consumerId]?.name,
+                role: usersMap[c.consumerId]?.role,
+                profilePicture: usersMap[c.consumerId]?.profilePicture
             }
         })
     }
