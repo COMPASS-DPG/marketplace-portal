@@ -930,6 +930,7 @@ export class ConsumerService {
 
         // Define the URL of the API endpoint
         // const apiUrl = 'https://test-compass.free.beeceptor.com/frac/getrole';
+        const fracData = await axios.get(`${process.env.WPCAS_SERVICE_URL}}/api/mockFracService/role/userId/${consumerId}`);
 
         // let response = await axios.get(apiUrl);
 
@@ -938,7 +939,6 @@ export class ConsumerService {
 
         const endpoint = `/api/course/recommended`;
         let queryParams = `?`;
-        const fracData = await axios.get(`${process.env.WPCAS_SERVICE_URL}}/api/mockFracService/role/formatedRoles`);
 
         fracData.data.roles.forEach((role) => {
             role.competency.forEach((competency) => {
