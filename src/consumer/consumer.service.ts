@@ -930,6 +930,9 @@ export class ConsumerService {
 
         // Define the URL of the API endpoint
         // const apiUrl = 'https://test-compass.free.beeceptor.com/frac/getrole';
+        if(!process.env.WPCAS_SERVICE_URL){
+            throw new HttpException("WPCAS URL not defined", 500);
+        }
         const fracData = await axios.get(`${process.env.WPCAS_SERVICE_URL}}/api/mockFracService/role/userId/${consumerId}`);
 
         // let response = await axios.get(apiUrl);
