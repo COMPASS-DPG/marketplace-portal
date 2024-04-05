@@ -938,7 +938,9 @@ export class ConsumerService {
 
         const endpoint = `/api/course/recommended`;
         let queryParams = `?`;
-        MOCK_FRAC_DATA.roles.forEach((role) => {
+        const fracData = await axios.get(`${process.env.WPCAS_SERVICE_URL}}/api/mockFracService/role/formatedRoles`);
+
+        fracData.data.roles.forEach((role) => {
             role.competency.forEach((competency) => {
                 queryParams += `competencies=${competency.name}&`;
             });
