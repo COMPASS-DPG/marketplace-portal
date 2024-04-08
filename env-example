@@ -18,6 +18,7 @@ PASSBOOK_SERVICE_URL=https://compass.samagra.io
 USER_SERVICE_URL="https://compass-dev.tarento.com/api/user/v4/user/search"
 USER_SERVICE_TOKEN=
 USER_SERVICE_COOKIE=
+WPCAS_SERVICE_URL="https://wpcas.backend.compass.samagra.io"
 
 # CREDENTIAL SERVICE
 CREDENTIAL_SERVICE_URL="https://compass.samagra.io"
