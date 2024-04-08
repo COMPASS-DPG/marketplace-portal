@@ -933,7 +933,7 @@ export class ConsumerService {
         if(!process.env.WPCAS_SERVICE_URL){
             throw new HttpException("WPCAS URL not defined", 500);
         }
-        const fracData = await axios.get(`${process.env.WPCAS_SERVICE_URL}}/api/mockFracService/role/userId/${consumerId}`);
+        const fracData = await axios.get(`${process.env.WPCAS_SERVICE_URL}/api/mockFracService/role/userId/${consumerId}`);
 
         // let response = await axios.get(apiUrl);
 
