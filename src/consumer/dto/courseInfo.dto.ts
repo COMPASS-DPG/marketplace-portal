@@ -64,7 +64,6 @@ export class CourseInfoDto {
 
     // Map of course competencies and tags of their respective levels
     @IsNotEmpty()
-    @IsArray()
     competency: CompetencyMap;
 
     // provider ID

@@ -15,7 +15,10 @@ WALLET_SERVICE_URL=http://wallet:4022
 REQUEST_SERVICE_URL=http://localhost:4024
 COURSE_MANAGER_URL=https://course.backend.compass.samagra.io
 PASSBOOK_SERVICE_URL=https://compass.samagra.io
-USER_SERVICE_URL=http://mock_user_service:4023
+USER_SERVICE_URL="https://compass-dev.tarento.com/api/user/v4/user/search"
+USER_SERVICE_TOKEN=
+USER_SERVICE_COOKIE=
+WPCAS_SERVICE_URL="https://wpcas.backend.compass.samagra.io"
 
 # CREDENTIAL SERVICE
 CREDENTIAL_SERVICE_URL="https://compass.samagra.io"

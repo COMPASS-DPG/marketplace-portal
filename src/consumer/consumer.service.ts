@@ -26,13 +26,58 @@ export class ConsumerService {
     ) {}
 
     async getConsumer(consumerId: string) {
-        const consumer = await this.prisma.consumerMetadata.findUnique({
+        let consumer = await this.prisma.consumerMetadata.findUnique({
             where: {
                 consumerId
             }
         });
-        if (!consumer)
-            throw new NotFoundException("consumer does not exist");
+        if(!consumer) {
+            // if the consumer is not available in the marketplace models, fetch it from user service
+            const baseUrl = process.env.USER_SERVICE_URL || "";
+            const headers = {
+                'Authorization': 'bearer ' + process.env.USER_SERVICE_TOKEN,
+                'Content-Type': 'application/json',
+                'Cookie': process.env.USER_SERVICE_COOKIE
+            };
+              
+            const data = {
+                "request": {
+                    "filters": {
+                        "id": consumerId
+                    }
+                }
+            };
+
+            let response = await axios.post(baseUrl, data, {headers});
+            console.log("user service response: ", response.data.result?.response);
+            if(response.data.result?.response?.count != 0) {
+                const userId = response.data.result?.response?.content[0]?.userId;
+                const name = response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.firstname + " " + response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.lastname;
+                const email = response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.primaryEmail;
+                const phone = response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.mobile;
+
+                const url = process.env.WALLET_SERVICE_URL;
+                const endpoint = url + `/api/wallet/create`;
+                const reqBody = {
+                    userId: userId,
+                    type: 'CONSUMER',
+                    credits: 0
+                }
+                const resp = await axios.post(endpoint, reqBody);
+
+                consumer = await this.prisma.consumerMetadata.create({
+                    data: {
+                        consumerId: userId,
+                        name: name,
+                        email: email,
+                        phoneNumber: phone,
+                    } 
+                })
+            } else {
+                throw new NotFoundException("consumer does not exist");
+            }
+        }
+            
         return consumer;
     }
 
@@ -59,7 +104,7 @@ export class ConsumerService {
     async getAccountDetails(consumerId: string): Promise<ConsumerAccountDto> {
         
         // Fetch and validate consumer
-        const consumer = await this.prisma.consumerMetadata.findUnique({
+        let consumer = await this.prisma.consumerMetadata.findUnique({
             where: {
                 consumerId
             },
@@ -71,9 +116,60 @@ export class ConsumerService {
                 }
             }
         });
-        if(!consumer)
-            throw new NotFoundException("consumer does not exist");
+        if(!consumer) {
+            const baseUrl = process.env.USER_SERVICE_URL || "";
+            const headers = {
+                'Authorization': 'bearer ' + process.env.USER_SERVICE_TOKEN,
+                'Content-Type': 'application/json',
+                'Cookie': process.env.USER_SERVICE_COOKIE
+              };
+              
+            const data = {
+                "request": {
+                    "filters": {
+                        "id": consumerId
+                    }
+                }
+            };
 
+            let response = await axios.post(baseUrl, data, {headers});
+            console.log("user service response: ", response.data.result?.response);
+            if(response.data.result?.response?.count != 0) {
+                const userId = response.data.result?.response?.content[0]?.userId;
+                const name = response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.firstname + " " + response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.lastname;
+                const email = response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.primaryEmail;
+                const phone = response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.mobile;
+
+                const url = process.env.WALLET_SERVICE_URL;
+                const endpoint = url + `/api/wallet/create`;
+                const reqBody = {
+                    userId: userId,
+                    type: 'CONSUMER',
+                    credits: 0
+                }
+                const resp = await axios.post(endpoint, reqBody);
+
+                consumer = await this.prisma.consumerMetadata.create({
+                    data: {
+                        consumerId: userId,
+                        name: name,
+                        email: email,
+                        phoneNumber: phone,
+                    },
+                    include: {
+                        _count: {
+                            select: {
+                                ConsumerCourseMetadata: true
+                            }
+                        }
+                    }
+                })
+            } else {
+                throw new NotFoundException("consumer does not exist");
+            }
+        }
+        if(!consumer)
+            throw new NotFoundException("consumer does not exist")
         // forward to wallet service for fetching credits
         let credits: number;
         const endpoint = `/api/consumers/${consumerId}/credits`;
@@ -834,6 +930,10 @@ export class ConsumerService {
 
         // Define the URL of the API endpoint
         // const apiUrl = 'https://test-compass.free.beeceptor.com/frac/getrole';
+        if(!process.env.WPCAS_SERVICE_URL){
+            throw new HttpException("WPCAS URL not defined", 500);
+        }
+        const fracData = await axios.get(`${process.env.WPCAS_SERVICE_URL}}/api/mockFracService/role/userId/${consumerId}`);
 
         // let response = await axios.get(apiUrl);
 
@@ -842,7 +942,8 @@ export class ConsumerService {
 
         const endpoint = `/api/course/recommended`;
         let queryParams = `?`;
-        MOCK_FRAC_DATA.roles.forEach((role) => {
+
+        fracData.data.roles.forEach((role) => {
             role.competency.forEach((competency) => {
                 queryParams += `competencies=${competency.name}&`;
             });
