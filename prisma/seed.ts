@@ -20,9 +20,9 @@ const main = async () => {
             email: "neha.patil@example.com",
             phoneNumber: "9999999990"
         }, {
-            consumerId: "abaa7220-5d2e-4e05-842a-95b2c4ce1876",
-            name: "Rajesh Kumar",
-            email: "rajesh.kumar@example.com",
+            consumerId: "890f2839-866f-4524-9eac-bebe0d35d607",
+            name: "Favas",
+            email: "favas@yopmail.com",
             phoneNumber: "9999999991"
         }, {
             consumerId: "0f5d0b13-8d72-46c9-a7c4-c1f7e5aa1f17",
@@ -268,18 +268,18 @@ const main = async () => {
             completedAt: new Date(),
         },{
             courseInfoId: 2,
-            consumerId: "abaa7220-5d2e-4e05-842a-95b2c4ce1876",
+            consumerId: "890f2839-866f-4524-9eac-bebe0d35d607",
             becknTransactionId: "123e4567-e89b-42d3-a456-556642440072",
         }, {
             courseInfoId: 1,
-            consumerId: "abaa7220-5d2e-4e05-842a-95b2c4ce1876",
+            consumerId: "890f2839-866f-4524-9eac-bebe0d35d607",
             becknTransactionId: "123e4567-e89b-42d3-a456-556642440073",
             status: CourseProgressStatus.COMPLETED,
             rating: 4,
             feedback: "Great course"
         }, {
             courseInfoId: 3,
-            consumerId: "abaa7220-5d2e-4e05-842a-95b2c4ce1876",
+            consumerId: "890f2839-866f-4524-9eac-bebe0d35d607",
             becknTransactionId: "123e4567-e89b-42d3-a456-556642440074"
         }]
     })

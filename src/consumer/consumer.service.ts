@@ -461,10 +461,13 @@ export class ConsumerService {
             throw new HttpException("BAP URI not defined", 500);
         
         const searchEndpoint = `/courses/search?searchText=${searchInput}`;
-
-        const searchResponse = await axios.get(process.env.BAP_URI + searchEndpoint);
-        const messageId = searchResponse.data.messageId;
-
+        let searchResponse, messageId;
+        try {
+            searchResponse = await axios.get(process.env.BAP_URI + searchEndpoint);
+            messageId = searchResponse.data.messageId;
+        } catch(err) {
+            console.error("Could not send the request to BAP: ", err.message)
+        }
         // forward to course manager
         if(!process.env.COURSE_MANAGER_URL)
             throw new HttpException("Course manager URL not defined", 500);

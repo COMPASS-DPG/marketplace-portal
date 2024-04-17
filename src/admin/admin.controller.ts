@@ -34,7 +34,7 @@ export class AdminController {
                 message: "Admin creation successful",
             });
         } catch (err) {
-            this.logger.error(`Failed to create admin`);
+            this.logger.error(`Failed to create admin: `, err.message);
 
             const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
             res.status(statusCode).json({
@@ -69,7 +69,7 @@ export class AdminController {
                 }
             });
         } catch (err) {
-            this.logger.error(`Failed to fetch all the consumers info.`);
+            this.logger.error(`Failed to fetch all the consumers info: `, err.message);
 
             const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
             res.status(statusCode).json({
@@ -110,7 +110,7 @@ export class AdminController {
                 }
             });
         } catch (err) {
-            this.logger.error(`Failed to fetch the consumer info with id: ${consumerId}`);
+            this.logger.error(`Failed to fetch the consumer info with id: ${consumerId} `, err.message);
 
             const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
             res.status(statusCode).json({
@@ -159,7 +159,7 @@ export class AdminController {
                 }
             });
         } catch (err) {
-            this.logger.error(`Failed to update the consumer info with id: ${consumerId}`);
+            this.logger.error(`Failed to update the consumer info with id: ${consumerId} `, err.message);
 
             const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
             res.status(statusCode).json({
@@ -197,7 +197,7 @@ export class AdminController {
                 message: `Added credits successfully`
             });
         } catch (err) {
-            this.logger.error(`Failed to add credits to the consumer wallet`);
+            this.logger.error(`Failed to add credits to the consumer wallet: `, err.message);
 
             const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
             res.status(statusCode).json({
@@ -223,7 +223,7 @@ export class AdminController {
                 message: `Removed credits successfully`
             });
         } catch (err) {
-            this.logger.error(`Failed to reduce credits from the consumer wallet`);
+            this.logger.error(`Failed to reduce credits from the consumer wallet: `, err.message);
 
             const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
             res.status(statusCode).json({
@@ -250,7 +250,7 @@ export class AdminController {
                 data: consumerWallets
             });
         } catch (err) {
-            this.logger.error(`Failed to fetch wallet info of all the consumers on the marketplace.`);
+            this.logger.error(`Failed to fetch wallet info of all the consumers on the marketplace: `, err.message);
 
             const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
             res.status(statusCode).json({
@@ -285,7 +285,7 @@ export class AdminController {
                 data: consumerTransactions
             });
         } catch (err) {
-            this.logger.error(`Failed to fetch transaction history of the given consumer.`);
+            this.logger.error(`Failed to fetch transaction history of the given consumer: `, err.message);
 
             const {errorMessage, statusCode} = getPrismaErrorStatusAndMessage(err);
             res.status(statusCode).json({
