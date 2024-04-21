@@ -33,48 +33,58 @@ export class ConsumerService {
         });
         if(!consumer) {
             // if the consumer is not available in the marketplace models, fetch it from user service
-            const baseUrl = process.env.USER_SERVICE_URL || "";
-            const headers = {
-                'Authorization': 'bearer ' + process.env.USER_SERVICE_TOKEN,
-                'Content-Type': 'application/json',
-                'Cookie': process.env.USER_SERVICE_COOKIE
-            };
-              
-            const data = {
-                "request": {
-                    "filters": {
-                        "id": consumerId
+            try {
+                const baseUrl = process.env.USER_SERVICE_URL || "";
+                const headers = {
+                    'Authorization': 'bearer ' + process.env.USER_SERVICE_TOKEN,
+                    'Content-Type': 'application/json',
+                    'Cookie': process.env.USER_SERVICE_COOKIE
+                };
+                
+                const data = {
+                    "request": {
+                        "filters": {
+                            "id": consumerId
+                        }
                     }
+                };
+
+                let response = await axios.post(baseUrl, data, {headers});
+                console.log("user service response: ", response.data.result?.response);
+                if(response.data.result?.response?.count != 0) {
+                    const userId = response.data.result?.response?.content[0]?.userId;
+                    const name = response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.firstname + " " + response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.lastname;
+                    const email = response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.primaryEmail;
+                    const phone = response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.mobile;
+
+                    const url = process.env.WALLET_SERVICE_URL;
+                    const endpoint = url + `/api/wallet/create`;
+                    const reqBody = {
+                        userId: userId,
+                        type: 'CONSUMER',
+                        credits: 0
+                    }
+                    const resp = await axios.post(endpoint, reqBody);
+
+                    consumer = await this.prisma.consumerMetadata.create({
+                        data: {
+                            consumerId: userId,
+                            name: name,
+                            email: email,
+                            phoneNumber: phone,
+                        } 
+                    })
+                } else {
+                    throw new NotFoundException(`User with the given userId does not exist in user service: ${consumerId}`)
                 }
-            };
-
-            let response = await axios.post(baseUrl, data, {headers});
-            console.log("user service response: ", response.data.result?.response);
-            if(response.data.result?.response?.count != 0) {
-                const userId = response.data.result?.response?.content[0]?.userId;
-                const name = response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.firstname + " " + response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.lastname;
-                const email = response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.primaryEmail;
-                const phone = response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.mobile;
-
+            } catch(err) {
                 const url = process.env.WALLET_SERVICE_URL;
-                const endpoint = url + `/api/wallet/create`;
+                const endpoint = url + `/api/wallet/delete`;
                 const reqBody = {
-                    userId: userId,
-                    type: 'CONSUMER',
-                    credits: 0
+                    userId: consumerId,
                 }
                 const resp = await axios.post(endpoint, reqBody);
-
-                consumer = await this.prisma.consumerMetadata.create({
-                    data: {
-                        consumerId: userId,
-                        name: name,
-                        email: email,
-                        phoneNumber: phone,
-                    } 
-                })
-            } else {
-                throw new NotFoundException("consumer does not exist");
+                throw new NotFoundException("Error creating the consumer: ", err.message)
             }
         }
             
@@ -117,55 +127,63 @@ export class ConsumerService {
             }
         });
         if(!consumer) {
-            const baseUrl = process.env.USER_SERVICE_URL || "";
-            const headers = {
-                'Authorization': 'bearer ' + process.env.USER_SERVICE_TOKEN,
-                'Content-Type': 'application/json',
-                'Cookie': process.env.USER_SERVICE_COOKIE
-              };
-              
-            const data = {
-                "request": {
-                    "filters": {
-                        "id": consumerId
-                    }
-                }
-            };
-
-            let response = await axios.post(baseUrl, data, {headers});
-            console.log("user service response: ", response.data.result?.response);
-            if(response.data.result?.response?.count != 0) {
-                const userId = response.data.result?.response?.content[0]?.userId;
-                const name = response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.firstname + " " + response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.lastname;
-                const email = response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.primaryEmail;
-                const phone = response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.mobile;
-
-                const url = process.env.WALLET_SERVICE_URL;
-                const endpoint = url + `/api/wallet/create`;
-                const reqBody = {
-                    userId: userId,
-                    type: 'CONSUMER',
-                    credits: 0
-                }
-                const resp = await axios.post(endpoint, reqBody);
-
-                consumer = await this.prisma.consumerMetadata.create({
-                    data: {
-                        consumerId: userId,
-                        name: name,
-                        email: email,
-                        phoneNumber: phone,
-                    },
-                    include: {
-                        _count: {
-                            select: {
-                                ConsumerCourseMetadata: true
-                            }
+            try {
+                const baseUrl = process.env.USER_SERVICE_URL || "";
+                const headers = {
+                    'Authorization': 'bearer ' + process.env.USER_SERVICE_TOKEN,
+                    'Content-Type': 'application/json',
+                    'Cookie': process.env.USER_SERVICE_COOKIE
+                };
+                
+                const data = {
+                    "request": {
+                        "filters": {
+                            "id": consumerId
                         }
                     }
-                })
-            } else {
-                throw new NotFoundException("consumer does not exist");
+                };
+
+                let response = await axios.post(baseUrl, data, {headers});
+                console.log("user service response: ", response.data.result?.response);
+                if(response.data.result?.response?.count != 0) {
+                    const userId = response.data.result?.response?.content[0]?.userId;
+                    const name = response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.firstname + " " + response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.lastname;
+                    const email = response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.primaryEmail;
+                    const phone = response.data.result?.response?.content[0]?.profileDetails?.personalDetails?.mobile;
+
+                    const url = process.env.WALLET_SERVICE_URL;
+                    const endpoint = url + `/api/wallet/create`;
+                    const reqBody = {
+                        userId: userId,
+                        type: 'CONSUMER',
+                        credits: 0
+                    }
+                    const resp = await axios.post(endpoint, reqBody);
+
+                    consumer = await this.prisma.consumerMetadata.create({
+                        data: {
+                            consumerId: userId,
+                            name: name,
+                            email: email,
+                            phoneNumber: phone,
+                        },
+                        include: {
+                            _count: {
+                                select: {
+                                    ConsumerCourseMetadata: true
+                                }
+                            }
+                        }
+                    })
+                }
+            } catch (err) {
+                const url = process.env.WALLET_SERVICE_URL;
+                const endpoint = url + `/api/wallet/delete`;
+                const reqBody = {
+                    userId: consumerId,
+                }
+                const resp = await axios.post(endpoint, reqBody);
+                throw new NotFoundException("Error creating the consumer: ", err.message)
             }
         }
         if(!consumer)
