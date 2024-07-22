@@ -9,7 +9,7 @@ const main = async () => {
 
     const admin = await prisma.admin.create({
         data: {
-            id: "123e4567-e89b-42d3-a456-556642440020"
+            id: "87fd80a9-63e9-4e90-81bb-4b6956c2561b"
         }
     });
 
@@ -34,16 +34,31 @@ const main = async () => {
             name: "Arjun Singh",
             email: "arjun.singh@example.com",
             phoneNumber: "9999999993"
+        }, {
+            consumerId: "9f4611d4-ab92-4acd-b3ce-13594e362eca",
+            name: "Reviewer One",
+            email: "reviewer.one@yopmail.com",
+            phoneNumber: "9999999994"
+        }, {
+            consumerId: "836ba369-fc24-4464-95ec-505d61b67ef0",
+            name: "Santosh",
+            email: "santhosh.reviewer@yopmail.com",
+            phoneNumber: "9999999995"
+        }, {
+            consumerId: "c8a43816-5a1b-4e29-9e1f-e8ef22efc669",
+            name: "Praveen",
+            email: "praveen.reviewer@yopmail.com",
+            phoneNumber: "9999999996"
         }]
     });
     const courses = await prisma.courseInfo.createMany({
         data: [{
             id: 1,
             courseId: "123e4567-e89b-42d3-a456-556642440050",
-            title: "NestJS Complete",
+            title: "Comprehensive Floor Inspection Techniques",
             courseLink: "https://www.udemy.com/course/nestjs-the-complete-developers-guide/",
             credits: 20,
-            description: "Build full featured backend APIs incredibly quickly with Nest, TypeORM, and Typescript. Includes testing and deployment!",
+            description: "Develop skills for thorough and accurate floor inspections.",
             imageLink: "https://courses.nestjs.com/img/logo.svg",
             providerName: "Udemy",
             language: ["en"],
@@ -53,68 +68,53 @@ const main = async () => {
             avgRating: 4.5,
             author: "Stephen Grider",
             competency: [{
-                    "id": 1,
-                    "name": "NestJs",
-                    "levels": [
-                        {
-                            "id": 1,
-                            "levelNumber": 1,
-                            "name": "Basic"
-                        }, {
-                            "id": 2,
-                            "levelNumber": 2,
-                            "name": "Intermediate"
-                        }, {
-                            "id": 3,
-                            "levelNumber": 3,
-                            "name": "Advanced"
-                        }
-                    ]
-                }, {
-                    "id": 2,
-                    "name": "Typescript",
-                    "levels": [
-                        {
-                            "id": 4,
-                            "levelNumber": 1,
-                            "name": "Basic"
-                        }, {
-                            "id": 5,
-                            "levelNumber": 2,
-                            "name": "Intermediate"
-                        }, {
-                            "id": 6,
-                            "levelNumber": 3,
-                            "name": "Advanced"
-                        }
-                    ]
-                }, {
-                    "id": 3,
-                    "name": "Backend engineering",
-                    "levels": [
-                        {
-                            "id": 7,
-                            "levelNumber": 1,
-                            "name": "Basic"
-                        }, {
-                            "id": 8,
-                            "levelNumber": 2,
-                            "name": "Intermediate"
-                        }, {
-                            "id": 9,
-                            "levelNumber": 3,
-                            "name": "Advanced"
-                        }
-                    ]
-                }
+                "id": 1,
+                "name": "Floor Planning and Mapping",
+                "levels": [
+                  {
+                    "levelNumber": 2,
+                    "name": "Level 2",
+                    "id": 2
+                  },
+                  {
+                    "levelNumber": 3,
+                    "name": "Level 3",
+                    "id": 3
+                  }
+                ]
+              }, {
+                "id": 8,
+                "name": "Floor Inspection",
+                "levels": [
+                  {
+                     "levelNumber": 1,
+                     "name": "Level 1",
+                     "id": 1
+                  },
+                  {
+                      "levelNumber": 2,
+                      "name": "Level 2",
+                      "id": 2
+                  },
+                  {
+                      "levelNumber": 3,
+                      "name": "Level 3",
+                      "id": 3
+                  }
+                ]
+              }, {
+                "id": 7,
+                "name": "Survey",
+                "levels": null
+              }
             ]
         }, {
             id: 2,
             courseId: "123e4567-e89b-42d3-a456-556642440051",
-            title: "Graphic Design Masterclass",
+            title: "Advanced Floor Planning and Inspection",
             courseLink: "https://www.udemy.com/course/graphic-design-masterclass-everything-you-need-to-know/",
             credits: 25,
-            description: "The Ultimate Graphic Design Course Which Covers Photoshop, Illustrator, InDesign, Design Theory, Branding & Logo Design",
+            description: "Master the skills of creating detailed floor plans and conducting thorough floor inspections.",
             imageLink: "https://www.unite.ai/wp-content/uploads/2023/05/emily-bernal-v9vII5gV8Lw-unsplash.jpg",
             providerName: "Udemy",
             language: ["en"],
@@ -124,68 +124,48 @@ const main = async () => {
             avgRating: 4.5,
             author: "Lindsay Marsh",
             competency: [{
+                "id": 8,
+                "name": "Floor Inspection",
+                "levels": [
+                    {
+                        "levelNumber": 1,
+                        "name": "Level 1",
+                        "id": 1
+                    },
+                    {
+                        "levelNumber": 2,
+                        "name": "Level 2",
+                        "id": 2
+                    },
+                    {
+                        "levelNumber": 3,
+                        "name": "Level 3",
+                        "id": 3
+                    }
+                ]
+            }, {
                 "id": 1,
-                "name": "API Development",
+                "name": "Floor Planning and Mapping",
                 "levels": [
                     {
-                        "id": 1,
-                        "levelNumber": 1,
-                        "name": "Basic"
-                    }, {
-                        "id": 2,
                         "levelNumber": 2,
-                        "name": "Intermediate"
-                    }, {
-                        "id": 3,
-                        "levelNumber": 3,
-                        "name": "Advanced"
-                    }
-                ]
-            }, {
-                "id": 2,
-                "name": "Typescript",
-                "levels": [
+                        "name": "Level 2",
+                        "id": 2
+                    },
                     {
-                        "id": 4,
-                        "levelNumber": 1,
-                        "name": "Basic"
-                    }, {
-                        "id": 5,
-                        "levelNumber": 2,
-                        "name": "Intermediate"
-                    }, {
-                        "id": 6,
                         "levelNumber": 3,
-                        "name": "Advanced"
+                        "name": "Level 3",
+                        "id": 3
                     }
                 ]
-            }, {
-                "id": 3,
-                "name": "Backend engineering",
-                "levels": [
-                    {
-                        "id": 7,
-                        "levelNumber": 1,
-                        "name": "Basic"
-                    }, {
-                        "id": 8,
-                        "levelNumber": 2,
-                        "name": "Intermediate"
-                    }, {
-                        "id": 9,
-                        "levelNumber": 3,
-                        "name": "Advanced"
-                    }
-                ]
-            }
-        ]
+            }]
         }, {
             id: 3,
             courseId: "123e4567-e89b-42d3-a456-556642440052",
-            title: "Python for Data Science",
+            title: "Strategic Coverage and Survey Techniques",
             courseLink: "https://www.udemy.com/course/python-for-data-science-and-machine-learning-bootcamp/",
             credits: 30,
-            description: "Learn how to use NumPy, Pandas, Seaborn , Matplotlib , Plotly , Scikit-Learn , Machine Learning, Tensorflow , and more",
+            description: "Learn to plan effective surveillance coverage and conduct comprehensive site surveys.",
             imageLink: "https://blog.imarticus.org/wp-content/uploads/2021/12/learn-Python-for-data-science.jpg",
             providerName: "Coursera",
             language: ["en"],
@@ -195,59 +175,29 @@ const main = async () => {
             author: "Jose Portilla",
             avgRating: 4.5,
             competency: [{
-                "id": 1,
-                "name": "API Development",
-                "levels": [
-                    {
-                        "id": 1,
-                        "levelNumber": 1,
-                        "name": "Basic"
-                    }, {
-                        "id": 2,
-                        "levelNumber": 2,
-                        "name": "Intermediate"
-                    }, {
-                        "id": 3,
-                        "levelNumber": 3,
-                        "name": "Advanced"
-                    }
-                ]
-            }, {
                 "id": 2,
-                "name": "Typescript",
+                "name": "Coverage and surveillance",
                 "levels": [
                     {
-                        "id": 4,
                         "levelNumber": 1,
-                        "name": "Basic"
-                    }, {
-                        "id": 5,
+                        "name": "Level 1",
+                        "id": 1
+                    },
+                    {
                         "levelNumber": 2,
-                        "name": "Intermediate"
-                    }, {
-                        "id": 6,
+                        "name": "Level 2",
+                        "id": 2
+                    },
+                    {
                         "levelNumber": 3,
-                        "name": "Advanced"
+                        "name": "Level 3",
+                        "id": 3
                     }
                 ]
             }, {
-                "id": 3,
-                "name": "Backend engineering",
-                "levels": [
-                    {
-                        "id": 7,
-                        "levelNumber": 1,
-                        "name": "Basic"
-                    }, {
-                        "id": 8,
-                        "levelNumber": 2,
-                        "name": "Intermediate"
-                    }, {
-                        "id": 9,
-                        "levelNumber": 3,
-                        "name": "Advanced"
-                    }
-                ]
+                "id": 7,
+                "name": "Survey",
+                "levels": null
             }
         ]
         }]
@@ -255,37 +205,37 @@ const main = async () => {
     const purchasedCourses = await prisma.consumerCourseMetadata.createMany({
         data: [{
             courseInfoId: 1,
-            consumerId: "4d45a9e9-4a4d-4c92-aaea-7b5abbd6ff98",
+            consumerId: "9f4611d4-ab92-4acd-b3ce-13594e362eca",
             becknTransactionId: "123e4567-e89b-42d3-a456-556642440070",
             status: CourseProgressStatus.COMPLETED,
             completedAt: new Date(),
             rating: 4,
         },{
             courseInfoId: 2,
-            consumerId: "4d45a9e9-4a4d-4c92-aaea-7b5abbd6ff98",
+            consumerId: "9f4611d4-ab92-4acd-b3ce-13594e362eca",
             becknTransactionId: "123e4567-e89b-42d3-a456-556642440071",
             status: CourseProgressStatus.COMPLETED,
             completedAt: new Date(),
         },{
             courseInfoId: 2,
-            consumerId: "890f2839-866f-4524-9eac-bebe0d35d607",
+            consumerId: "836ba369-fc24-4464-95ec-505d61b67ef0",
             becknTransactionId: "123e4567-e89b-42d3-a456-556642440072",
         }, {
             courseInfoId: 1,
-            consumerId: "890f2839-866f-4524-9eac-bebe0d35d607",
+            consumerId: "836ba369-fc24-4464-95ec-505d61b67ef0",
             becknTransactionId: "123e4567-e89b-42d3-a456-556642440073",
             status: CourseProgressStatus.COMPLETED,
             rating: 4,
             feedback: "Great course"
         }, {
             courseInfoId: 3,
-            consumerId: "890f2839-866f-4524-9eac-bebe0d35d607",
+            consumerId: "836ba369-fc24-4464-95ec-505d61b67ef0",
             becknTransactionId: "123e4567-e89b-42d3-a456-556642440074"
         }]
     })
     const notifs = await prisma.notification.createMany({
         data: [{
-            consumerId: "4d45a9e9-4a4d-4c92-aaea-7b5abbd6ff98",
+            consumerId: "9f4611d4-ab92-4acd-b3ce-13594e362eca",
             link: "/",
             text: "",
         }]
